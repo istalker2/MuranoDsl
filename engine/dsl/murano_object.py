@@ -6,7 +6,10 @@ import helpers
 
 
 class MuranoObject(object):
-    def __init__(self, murano_class, object_store, object_id=None):
+    def __init__(self, murano_class, object_store, object_id=None,
+                 known_classes=None):
+        if known_classes is None:
+            known_classes = {}
         self._object_id = object_id or uuid.uuid4().hex
         self._type = murano_class
         self._properties = {}
@@ -15,9 +18,17 @@ class MuranoObject(object):
         for property_name in murano_class.properties:
             typespec = murano_class.get_property(property_name)
             self._properties[property_name] = typespec.default
+        known_classes[murano_class.name] = self
         for parent in murano_class.parents:
-            self._parents[parent.name] = MuranoObject(
-                parent, self._object_id)
+            parent_type_name = parent.name
+            if not parent_type_name in known_classes:
+                known_classes[parent_type_name] = self._parents[
+                    parent_type_name] = MuranoObject(
+                    parent, object_store, self._object_id, known_classes)
+            else:
+                self._parents[parent_type_name] = \
+                    known_classes[parent_type_name]
+
 
     def initialize(self, **kwargs):
         for property_name, property_value in kwargs.iteritems():
@@ -79,6 +90,15 @@ class MuranoObject(object):
             return True
         return False
 
+    def cast(self, type):
+        if self.type == type:
+            return self
+        for parent in self._parents.values():
+            try:
+                return parent.cast(type)
+            except TypeError as e:
+                continue
+        raise TypeError('Cannot cast')
 
     def __repr__(self):
         return yaml.dump(helpers.serialize(self))

@@ -5,6 +5,7 @@ import types
 from oslo.config.cfg import ConfigOpts, OptGroup
 from yaql.context import EvalArg
 from eventlet.greenpool import GreenPool
+from engine.dsl import helpers
 
 
 def _transform_json(json, mappings):
@@ -114,8 +115,7 @@ def _split(value, separator):
 
 
 def _pselect(collection, composer):
-    gp = GreenPool()
-    return gp.imap(composer, collection())
+    return helpers.parallel_select(collection(), composer)
 
 
 def register(context):

@@ -80,14 +80,14 @@ class EngineService(service.Service):
 
     def debug_print(self, msg):
         print '>>', msg
-        eventlet.sleep(2)
-        print '<<', msg
+        #eventlet.sleep(2)
+        #print '<<', msg
         return 14
     def debug_print2(self, msg):
         print '>>>', msg
-        eventlet.sleep(3)
-        print '<<<', msg
-        return 14
+        #eventlet.sleep(3)
+        #print '<<<', msg
+        return 15
 
     def test(self):
 
@@ -99,6 +99,10 @@ class EngineService(service.Service):
         cl = class_loader.ClassLoader(base_path)
         system.register(cl, base_path)
         executor = MuranoDslExecutor(cl, environment)
+        object_class = cl.get_class("com.mirantis.murano.Object")
+        object_class.add_method('debugPrint', self.debug_print)
+        object_class.add_method('debugPrint2', self.debug_print2)
+
         objects = executor.load({
             '123': {'?': {'type': 'com.mirantis.murano.examples.Test'},
                      'p1': 88, 'pt': '345' },
@@ -116,9 +120,6 @@ class EngineService(service.Service):
 
 
 
-        object_class = cl.get_class("com.mirantis.murano.Object")
-        object_class.add_method('debugPrint', self.debug_print)
-        object_class.add_method('debugPrint2', self.debug_print2)
 #        print test_class.name
         res = obj.type.invoke('method1', executor, obj, {'t': 17})
         print "=", res

@@ -1,4 +1,5 @@
-from engine.dsl.murano_object import MuranoObject
+import helpers
+from murano_object import MuranoObject
 
 
 class ObjectStore(object):
@@ -33,5 +34,10 @@ class ObjectStore(object):
             tmp_store._store[key] = obj
             obj.initialize(**value)
         loaded_objects = tmp_store._store.values()
+        executor = helpers.get_executor(context)
+        for obj in loaded_objects:
+            methods = obj.type.find_method('initialize')
+            for cls, method in methods:
+                cls.invoke(method, executor, obj, {})
         self._store.update(tmp_store._store)
         return loaded_objects

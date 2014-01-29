@@ -4,8 +4,9 @@ Namespaces:
     sys: com.mirantis.murano.system
 Name: Test
 
-#Inherits:
-#  - TestParent
+Inherits:
+  - TestParent
+  - TestParent2
 
 Properties:
   p1:
@@ -18,9 +19,10 @@ Properties:
     Type: Test2
 
 Workflow:
-  __init__:
+  initialize:
     Body:
-      - $.debugPrint()
+      - $.super().pselect($.initialize())
+      - $.debugPrint('.ctor')
 
   method1:
       Arguments:

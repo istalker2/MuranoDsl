@@ -6,7 +6,8 @@ import types
 import murano_object
 from yaql_expression import YaqlExpression
 import yaql.expressions
-from eventlet.greenpool import GreenMap
+from eventlet.greenpool import GreenPool
+
 
 def serialize(value):
     if isinstance(value, types.DictionaryType):
@@ -79,6 +80,11 @@ def merge_dicts(dict1, dict2, max_levels=0):
         if key not in result:
             result[key] = value
     return result
+
+
+def parallel_select(collection, func):
+    gp = GreenPool()
+    return gp.imap(func, collection)
 
 
 def to_python_codestyle(name):

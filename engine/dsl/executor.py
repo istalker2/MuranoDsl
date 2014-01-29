@@ -56,7 +56,22 @@ class MuranoDslExecutor(object):
 
         self._root_context.register_function(_id, 'id')
 
+        @EvalArg('value', MuranoObject)
+        @EvalArg('type', str)
+        @ContextAware()
+        def _cast(context, value, type):
+            if not '.' in type:
+                murano_class = context.get_data('$?type')
+                type = murano_class.namespace_resolver.resolve_name(type)
+            return value.cast(self._class_loader.get_class(type))
 
+        self._root_context.register_function(_cast, 'cast')
+
+        @EvalArg('value', MuranoObject)
+        def _super(value):
+            return [value.cast(type) for type in value.type.parents]
+
+        self._root_context.register_function(_super, 'super')
 
     def _resolve(self, context, name, obj):
         @EvalArg('this', MuranoObject)

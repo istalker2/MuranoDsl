@@ -4,20 +4,14 @@ Namespaces:
 Name: Test2
 
 Properties:
-  p2:
+  p:
     Type: Integer
     Default: 11
 
 Workflow:
   method1:
-      Arguments:
-        - t:
-            Type: Integer
-        - z:
-            Type: Integer
-            Default: 33
       Body:
-        - Return: $.p2 * 2
+        - Return: $.p * 2
 #        - debugPrint: 999999
 #        - debugPrint: $t
 #        - debugPrint: [$t, $.p2]
