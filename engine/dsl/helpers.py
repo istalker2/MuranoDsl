@@ -84,7 +84,7 @@ def merge_dicts(dict1, dict2, max_levels=0):
 
 def parallel_select(collection, func):
     gp = GreenPool()
-    return gp.imap(func, collection)
+    return list(gp.imap(func, collection))
 
 
 def to_python_codestyle(name):
@@ -105,4 +105,8 @@ def get_environment(context):
 
 
 def get_object_store(context):
-    return context.get_data('$?objectStore')
+    return context.get_data('$?objectStore+')
+
+
+def get_shadow_object_store(context):
+    return context.get_data('$?objectStore-')

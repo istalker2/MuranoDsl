@@ -21,7 +21,7 @@ Properties:
 Workflow:
   initialize:
     Body:
-      - $.super().pselect($.initialize())
+      - $this.super($.initialize())
       - $.debugPrint('.ctor')
 
   method1:

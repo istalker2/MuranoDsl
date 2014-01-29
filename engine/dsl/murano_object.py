@@ -7,7 +7,7 @@ import helpers
 
 class MuranoObject(object):
     def __init__(self, murano_class, object_store, object_id=None,
-                 known_classes=None):
+                 known_classes=None, frozen=False):
         if known_classes is None:
             known_classes = {}
         self._object_id = object_id or uuid.uuid4().hex
@@ -15,6 +15,7 @@ class MuranoObject(object):
         self._properties = {}
         self._object_store = object_store
         self._parents = {}
+        self._frozen = frozen
         for property_name in murano_class.properties:
             typespec = murano_class.get_property(property_name)
             self._properties[property_name] = typespec.default
@@ -24,17 +25,16 @@ class MuranoObject(object):
             if not parent_type_name in known_classes:
                 known_classes[parent_type_name] = self._parents[
                     parent_type_name] = MuranoObject(
-                    parent, object_store, self._object_id, known_classes)
+                        parent, object_store, self._object_id,
+                        known_classes, frozen)
             else:
                 self._parents[parent_type_name] = \
                     known_classes[parent_type_name]
-
 
     def initialize(self, **kwargs):
         for property_name, property_value in kwargs.iteritems():
             self.set_property(property_name, property_value,
                               self._object_store)
-
 
     @property
     def object_id(self):
@@ -67,6 +67,8 @@ class MuranoObject(object):
         return result
 
     def set_property(self, key, value, object_store, caller_class=None):
+        if self._frozen:
+            raise NotImplementedError()
         if key in self._properties and self._is_accessible(key, caller_class):
             spec = self._type.get_property(key)
             self._properties[key] = spec.validate(

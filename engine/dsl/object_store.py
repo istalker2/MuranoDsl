@@ -3,10 +3,11 @@ from murano_object import MuranoObject
 
 
 class ObjectStore(object):
-    def __init__(self, class_loader, parent_store=None):
+    def __init__(self, class_loader, parent_store=None, frozen=False):
         self._class_loader = class_loader
         self._parent_store = parent_store
         self._store = {}
+        self._frozen = frozen
 
     @property
     def class_loader(self):
@@ -30,7 +31,8 @@ class ObjectStore(object):
             class_obj = self._class_loader.get_class(obj_type)
             if not class_obj:
                 raise ValueError()
-            obj = class_obj.new(tmp_store, context=context, object_id=key)
+            obj = class_obj.new(tmp_store, context=context, object_id=key,
+                                frozen=self._frozen)
             tmp_store._store[key] = obj
             obj.initialize(**value)
         loaded_objects = tmp_store._store.values()

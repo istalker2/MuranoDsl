@@ -2,6 +2,7 @@ import functools
 import inspect
 import eventlet
 from eventlet.event import Event
+import itertools
 import yaql
 import yaql.exceptions
 import types
@@ -14,11 +15,13 @@ from engine.dsl import helpers, MuranoObject, ObjectStore
 class MuranoDslExecutor(object):
     def __init__(self, class_loader, environment=None):
         self._class_loader = class_loader
-        self._object_store = ObjectStore(class_loader)
+        self._object_store = ObjectStore(class_loader, frozen=False)
+        self._shadow_object_store = ObjectStore(class_loader, frozen=True)
         self._root_context = class_loader.create_root_context()
         self._root_context.set_data(self, '?executor')
         self._root_context.set_data(environment, '?environment')
-        self._root_context.set_data(self._object_store, '?objectStore')
+        self._root_context.set_data(self._object_store, '?objectStore+')
+        self._root_context.set_data(self._shadow_object_store, '?objectStore-')
         self._locks = {}
 
         @ContextAware()
@@ -71,6 +74,17 @@ class MuranoDslExecutor(object):
         def _super(value):
             return [value.cast(type) for type in value.type.parents]
 
+        @EvalArg('value', MuranoObject)
+        def _super2(value, func):
+            return itertools.imap(func, _super(value))
+
+        @EvalArg('value', MuranoObject)
+        def _psuper2(value, func):
+            helpers.parallel_select(_super(value), func)
+
+
+        self._root_context.register_function(_super2, 'super')
+        self._root_context.register_function(_psuper2, 'psuper')
         self._root_context.register_function(_super, 'super')
 
     def _resolve(self, context, name, obj):
@@ -226,3 +240,6 @@ class MuranoDslExecutor(object):
 
     def load(self, data):
         return self._object_store.load(data, self._root_context)
+
+    def load_shadow(self, data):
+        return self._shadow_object_store.load(data, self._root_context)

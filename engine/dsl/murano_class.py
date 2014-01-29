@@ -78,8 +78,10 @@ class MuranoClass(object):
                 return True
         return False
 
-    def new(self, object_store, context, parameters=None, object_id=None):
-        obj = MuranoObject(self, object_store, object_id=object_id)
+    def new(self, object_store, context, parameters=None, object_id=None,
+            frozen=False):
+        obj = MuranoObject(self, object_store, object_id=object_id,
+                           frozen=frozen)
         if parameters is not None:
             obj.initialize(**parameters)
         return obj
