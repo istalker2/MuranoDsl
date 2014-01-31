@@ -1,6 +1,14 @@
+import functools
 from murano_method import MuranoMethod
 from murano_object import MuranoObject
 from typespec import PropertySpec
+
+
+def classname(name):
+    def wrapper(cls):
+        cls._murano_class_name = name
+        return cls
+    return wrapper
 
 
 class MuranoClass(object):
@@ -79,9 +87,9 @@ class MuranoClass(object):
         return False
 
     def new(self, object_store, context, parameters=None, object_id=None,
-            frozen=False):
-        obj = MuranoObject(self, object_store, object_id=object_id,
-                           frozen=frozen)
+            frozen=False, **kwargs):
+        obj = MuranoObject(self, object_store, context, object_id=object_id,
+                           frozen=frozen, **kwargs)
         if parameters is not None:
             obj.initialize(**parameters)
         return obj

@@ -20,6 +20,9 @@ class ObjectStore(object):
             return self._parent_store.get(object_id)
         return None
 
+    def put(self, murano_object):
+        self._store[murano_object.object_id] = murano_object
+
     def load(self, data, context):
         tmp_store = ObjectStore(self._class_loader, self)
         for key, value in data.iteritems():

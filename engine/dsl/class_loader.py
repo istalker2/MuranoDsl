@@ -6,11 +6,12 @@ import exceptions
 from namespace_resolver import NamespaceResolver
 from murano_class import MuranoClass, MuranoObject
 import typespec
-
+import principle_objects
 
 class MuranoClassLoader(object):
     def __init__(self):
         self._loaded_types = {}
+        principle_objects.register(self)
 
     def get_class(self, name, create_missing=False):
         if name in self._loaded_types:
@@ -79,13 +80,16 @@ class MuranoClassLoader(object):
 
         if inspect.isclass(cls):
             if issubclass(cls, MuranoObject):
-                def create_cls(object_store, context, parameters):
-                    result = cls(murano_class, object_store)
-                    parameters = self._fix_parameters(parameters)
-                    if '_context' in inspect.getargspec(
-                            result.initialize).args:
-                        parameters['_context'] = context
-                    result.initialize(**parameters)
+                def create_cls(object_store, context, parameters,
+                               object_id=None, **kwargs):
+                    result = cls(murano_class, object_store, context,
+                                 object_id=object_id, **kwargs)
+                    if parameters is not None:
+                        parameters = self._fix_parameters(parameters)
+                        if '_context' in inspect.getargspec(
+                                result.initialize).args:
+                            parameters['_context'] = context
+                        result.initialize(**parameters)
                     return result
                 murano_class.new = create_cls
             else:

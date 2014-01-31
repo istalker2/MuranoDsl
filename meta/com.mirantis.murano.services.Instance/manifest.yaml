@@ -15,13 +15,9 @@ Properties:
   image:
     Type: String
     Mandatory: true
-  heat:
-    Type: sys:Heat
-    Access: System
 
 Workflow:
-  std:Deploy:
-    Access: Public
+  deploy:
     Arguments:
       - environment:
           Type: std:Environment
@@ -33,9 +29,8 @@ Workflow:
               Properties:
                 InstanceType: $.flavor
                 ImageId: $.image
-      - UpdateStack $.heat:
-          template: $template
-          environment: $.environment
+      - $.heat.updateStack(template => $template,
+          environment => $.environment)
 
 
 

@@ -62,10 +62,13 @@ class MuranoMethod(object):
         defaults = func_info.defaults or tuple()
         for i in xrange(len(defaults)):
             data[i + len(data) - len(defaults)][1]['Default'] = defaults[i]
-        return OrderedDict([
+        result = OrderedDict([
             (name, typespec.ArgumentSpec(declaration,
                                              self._namespace_resolver))
             for name, declaration in data])
+        if '_context' in result:
+            del result['_context']
+        return result
 
     def _prepare_body(self, body):
         return macros.MethodBlock(body)

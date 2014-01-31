@@ -76,7 +76,6 @@ class ParallelMacro(CodeBlock):
         gp.waitall()
 
 
-
 def do_macro(Do):
     e, body = Do
     if e:

@@ -20,9 +20,9 @@ Properties:
 
 Workflow:
   initialize:
-    Body:
-      - $this.super($.initialize())
-      - $.debugPrint('.ctor')
+    Body: []
+#      - $this.super($.initialize())
+#      - $.debugPrint('.ctor')
 
   method1:
       Arguments:
@@ -32,10 +32,12 @@ Workflow:
             Type: Integer
             Default: 33
       Body:
-         - $data: new(sys:Resources).json('test.json').a
-         - $.debugPrint($data)
-         #- $z: new(Test2, p2 => 15)
-         #- Return: $z.method1(1, 2)
+
+         - $.debugPrint($this.shadowed().p1)
+         - $.shadow()
+         - $.debugPrint($this.shadowed().p1)
+         #- $z: new(Test2, p => 15)
+         - Return:
          #- $.p1: $.pt.method1(1, 44)
 #         - $heat: new(sys:Heat, $q).createStack(name2 => xxx, yyy)
 #         - $heat: new(sys:Heat).createStack(name2 => zzz, zzz)

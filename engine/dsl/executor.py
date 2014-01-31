@@ -1,109 +1,30 @@
 import functools
 import inspect
+import uuid
 import eventlet
 from eventlet.event import Event
-import itertools
-import yaql
-import yaql.exceptions
 import types
 import expressions
 import exceptions
-from yaql.context import ContextAware, EvalArg
+from yaql.context import EvalArg
 from engine.dsl import helpers, MuranoObject, ObjectStore
+import dsl_yaql_functions
 
 
 class MuranoDslExecutor(object):
     def __init__(self, class_loader, environment=None):
         self._class_loader = class_loader
         self._object_store = ObjectStore(class_loader, frozen=False)
-        self._shadow_object_store = ObjectStore(class_loader, frozen=True)
+        self._shadow_object_store = ObjectStore(
+            class_loader, parent_store=self._object_store, frozen=True)
         self._root_context = class_loader.create_root_context()
         self._root_context.set_data(self, '?executor')
+        self._root_context.set_data(self._class_loader, '?classLoader')
         self._root_context.set_data(environment, '?environment')
         self._root_context.set_data(self._object_store, '?objectStore+')
         self._root_context.set_data(self._shadow_object_store, '?objectStore-')
         self._locks = {}
-
-        @ContextAware()
-        def resolve(context, name, obj):
-            return self._resolve(context, name, obj)
-
-        self._root_context.register_function(resolve, '#resolve')
-
-        @EvalArg('name', str)
-        @ContextAware()
-        def new(context, name, *args):
-            if not '.' in name:
-                murano_class = context.get_data('$?type')
-                name = murano_class.namespace_resolver.resolve_name(name)
-            parameters = {}
-            arg_values = [t() for t in args]
-            if len(arg_values) == 1 and isinstance(
-                    arg_values[0], types.DictionaryType):
-                parameters = arg_values[0]
-            elif len(arg_values) > 0:
-                for p in arg_values:
-                    if not isinstance(p, types.TupleType) or \
-                            not isinstance(p[0], types.StringType):
-                            raise SyntaxError()
-                    parameters[p[0]] = p[1]
-
-            return self._class_loader.get_class(name).new(
-                self._object_store, context, parameters=parameters)
-
-        self._root_context.register_function(new, 'new')
-
-        @EvalArg('value', MuranoObject)
-        def _id(value):
-            return value.object_id
-
-        self._root_context.register_function(_id, 'id')
-
-        @EvalArg('value', MuranoObject)
-        @EvalArg('type', str)
-        @ContextAware()
-        def _cast(context, value, type):
-            if not '.' in type:
-                murano_class = context.get_data('$?type')
-                type = murano_class.namespace_resolver.resolve_name(type)
-            return value.cast(self._class_loader.get_class(type))
-
-        self._root_context.register_function(_cast, 'cast')
-
-        @EvalArg('value', MuranoObject)
-        def _super(value):
-            return [value.cast(type) for type in value.type.parents]
-
-        @EvalArg('value', MuranoObject)
-        def _super2(value, func):
-            return itertools.imap(func, _super(value))
-
-        @EvalArg('value', MuranoObject)
-        def _psuper2(value, func):
-            helpers.parallel_select(_super(value), func)
-
-
-        self._root_context.register_function(_super2, 'super')
-        self._root_context.register_function(_psuper2, 'psuper')
-        self._root_context.register_function(_super, 'super')
-
-    def _resolve(self, context, name, obj):
-        @EvalArg('this', MuranoObject)
-        def invoke(this, *args):
-            try:
-
-                murano_class = context.get_data('$?type')
-                return self.invoke_method(name, obj, context,
-                                          murano_class, *args)
-            except exceptions.NoMethodFound:
-                raise yaql.exceptions.YaqlExecutionException()
-            except exceptions.AmbiguousMethodName:
-                raise yaql.exceptions.YaqlExecutionException()
-
-        if not isinstance(obj, MuranoObject):
-            return None
-
-        return invoke
+        dsl_yaql_functions.register(self._root_context)
 
     def to_yaql_args(self, args):
         if not args:
@@ -147,29 +68,45 @@ class MuranoDslExecutor(object):
         if not body:
             return None
 
+        current_thread = eventlet.greenthread.getcurrent()
+        if not hasattr(current_thread, '_murano_dsl_thread_marker'):
+            thread_marker = current_thread._murano_dsl_thread_marker = \
+                uuid.uuid4().hex
+        else:
+            thread_marker = current_thread._murano_dsl_thread_marker
+
         method_id = id(body)
         this_id = this.object_id
 
-        event = self._locks.get((method_id, this_id))
+        event, marker = self._locks.get((method_id, this_id), (None, None))
         if event:
+            if marker == thread_marker:
+                return self._invoke_method_implementation_gt(
+                    body, this, context, params, method.murano_class)
             event.wait()
 
         event = Event()
-        self._locks[(method_id, this_id)] = event
+        self._locks[(method_id, this_id)] = (event, thread_marker)
         gt = eventlet.spawn(self._invoke_method_implementation_gt, body,
-                            this, context, params, method.murano_class)
+                            this, context, params, method.murano_class,
+                            thread_marker)
         result = gt.wait()
         del self._locks[(method_id, this_id)]
         event.send()
         return result
 
     def _invoke_method_implementation_gt(self, body, this, context,
-                                         params, murano_class):
+                                         params, murano_class,
+                                         thread_marker=None):
+        if thread_marker:
+            current_thread = eventlet.greenthread.getcurrent()
+            current_thread._murano_dsl_thread_marker = thread_marker
+        context.set_data(this, '?this')
         if callable(body):
             if '_context' in inspect.getargspec(body).args:
                 params['_context'] = context
             if inspect.ismethod(body) and not body.__self__:
-                return body(this, **params)
+                return body(this.cast(murano_class), **params)
             else:
                 return body(**params)
         elif isinstance(body, expressions.DslExpression):
@@ -210,18 +147,18 @@ class MuranoDslExecutor(object):
 
         return parameter_values
 
-    def execute(self, expression, murano_class, this, parameters={}):
-        new_context = self._object_store.class_loader.create_local_context(
+    def create_context(self, this, murano_class):
+        new_context = self._class_loader.create_local_context(
             parent_context=self._root_context,
             murano_class=murano_class)
         new_context.set_data(this)
         new_context.set_data(this, '$this')
         new_context.set_data(murano_class, '?type')
 
-        @EvalArg('this', arg_type=MuranoObject)
+        @EvalArg('obj', arg_type=MuranoObject)
         @EvalArg('property_name', arg_type=str)
-        def obj_attribution(this, property_name):
-            return this.get_property(property_name, murano_class)
+        def obj_attribution(obj, property_name):
+            return obj.get_property(property_name, murano_class)
 
 
         @EvalArg('prefix', str)
@@ -232,7 +169,10 @@ class MuranoDslExecutor(object):
 
         new_context.register_function(obj_attribution, '#operator_.')
         new_context.register_function(validate, '#validate')
+        return new_context
 
+    def execute(self, expression, murano_class, this, parameters={}):
+        new_context = self.create_context(this, murano_class)
         for key, value in parameters.iteritems():
             new_context.set_data(value, key)
         return expression.execute(

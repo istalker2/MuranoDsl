@@ -80,13 +80,13 @@ class EngineService(service.Service):
 
     def debug_print(self, msg):
         print '>>', msg
-        #eventlet.sleep(2)
-        #print '<<', msg
+        eventlet.sleep(2)
+        print '<<', msg
         return 14
     def debug_print2(self, msg):
         print '>>>', msg
-        #eventlet.sleep(3)
-        #print '<<<', msg
+        eventlet.sleep(3)
+        print '<<<', msg
         return 15
 
     def test(self):
@@ -108,6 +108,10 @@ class EngineService(service.Service):
                      'p1': 88, 'pt': '345' },
             '345': {'?': {'type': 'com.mirantis.murano.examples.Test2'},
                     'p': 777}
+        })
+        executor.load_shadow({
+            '123': {'?': {'type': 'com.mirantis.murano.examples.Test'},
+                     'p1': 99, 'pt': '345' }
         })
         # objects = object_store.load({
         #     '123': {'?': {'type': 'com.mirantis.murano.examples.Test'}},

@@ -6,8 +6,8 @@ import helpers
 
 
 class MuranoObject(object):
-    def __init__(self, murano_class, object_store, object_id=None,
-                 known_classes=None, frozen=False):
+    def __init__(self, murano_class, object_store, context, object_id=None,
+                 frozen=False, known_classes=None):
         if known_classes is None:
             known_classes = {}
         self._object_id = object_id or uuid.uuid4().hex
@@ -24,17 +24,23 @@ class MuranoObject(object):
             parent_type_name = parent.name
             if not parent_type_name in known_classes:
                 known_classes[parent_type_name] = self._parents[
-                    parent_type_name] = MuranoObject(
-                        parent, object_store, self._object_id,
-                        known_classes, frozen)
+                    parent_type_name] = parent.new(
+                        object_store, context, None,
+                        object_id=self._object_id,
+                        frozen=frozen, known_classes=known_classes)
             else:
                 self._parents[parent_type_name] = \
                     known_classes[parent_type_name]
 
     def initialize(self, **kwargs):
-        for property_name, property_value in kwargs.iteritems():
-            self.set_property(property_name, property_value,
-                              self._object_store)
+        frozen = self._frozen
+        self._frozen = False
+        try:
+            for property_name, property_value in kwargs.iteritems():
+                self.set_property(property_name, property_value,
+                                  self._object_store)
+        finally:
+            self._frozen = frozen
 
     @property
     def object_id(self):
@@ -45,6 +51,8 @@ class MuranoObject(object):
         return self._type
 
     def __getattr__(self, item):
+        if item.startswith('__'):
+            raise AttributeError('xxx')
         return self.get_property(item)
 
     def get_property(self, item, caller_class=None):

@@ -96,6 +96,10 @@ def get_executor(context):
     return context.get_data('$?executor')
 
 
+def get_class_loader(context):
+    return context.get_data('$?classLoader')
+
+
 def get_type(context):
     return context.get_data('$?type')
 
@@ -110,3 +114,7 @@ def get_object_store(context):
 
 def get_shadow_object_store(context):
     return context.get_data('$?objectStore-')
+
+
+def get_this(context):
+    return context.get_data('$?this')

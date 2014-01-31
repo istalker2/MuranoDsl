@@ -1,10 +1,10 @@
 import base64
-import engine.config as cfg
 import re
 import types
-from oslo.config.cfg import ConfigOpts, OptGroup
+
 from yaql.context import EvalArg
-from eventlet.greenpool import GreenPool
+
+import engine.config as cfg
 from engine.dsl import helpers
 
 
