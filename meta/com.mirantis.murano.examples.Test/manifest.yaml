@@ -34,7 +34,7 @@ Workflow:
             Type: $.int()
             Default: 33
       Body:
-
+         - $.pt.pt2.method1()
          #- $.debugPrint($this.shadowed().p1)
          #- $.shadow()
          #- $.debugPrint($this.shadowed().p1)

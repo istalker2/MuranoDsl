@@ -1,4 +1,5 @@
 import types
+import sys
 import helpers
 from murano_object import MuranoObject
 from yaql_expression import YaqlExpression
@@ -131,13 +132,28 @@ class TypeScheme(object):
         return result
 
     def _map_list(self, data, spec, context):
-        if len(spec) < 1:
-            raise TypeError()
         if not isinstance(data, types.ListType):
             data = [data]
+        if len(spec) < 1:
+            return data
         result = []
+        shift = 0
+        max_length = sys.maxint
+        min_length = 0
+        if isinstance(spec[-1], types.IntType):
+            min_length = spec[-1]
+            shift += 1
+        if len(spec) >= 2 and isinstance(spec[-2], types.IntType):
+            max_length = min_length
+            min_length = spec[-2]
+            shift += 1
+
+        if not min_length <= len(data) <= max_length:
+            raise TypeError()
+
         for index, item in enumerate(data):
-            spec_item = spec[-1] if index >= len(spec) else spec[index]
+            spec_item = spec[-1 - shift] \
+                if index >= len(spec) - shift else spec[index]
             result.append(self._map(item, spec_item, context))
         return result
 

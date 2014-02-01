@@ -5,4 +5,5 @@ Name: Test3
 
 Workflow:
   method1:
-      Body: []
+      Body:
+        - $.debugPrint($.getContainer(std:Object).require())

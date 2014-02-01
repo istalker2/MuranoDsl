@@ -81,6 +81,28 @@ def _psuper2(value, func):
     helpers.parallel_select(_super(value), func)
 
 
+@EvalArg('value', object)
+def _require(value):
+    if value is None:
+        raise ValueError()
+    return value
+
+@EvalArg('obj', MuranoObject)
+@EvalArg('class_name', str)
+@ContextAware()
+def _get_container(context, obj, class_name):
+    namespace_resolver = helpers.get_type(context).namespace_resolver
+    class_loader = helpers.get_class_loader(context)
+    class_name = namespace_resolver.resolve_name(class_name)
+    murano_class = class_loader.get_class(class_name)
+    p = obj.parent
+    while p is not None:
+        if murano_class.is_compatible(p):
+            return p
+        p = p.parent
+    return None
+
+
 def register(context):
     context.register_function(_resolve, '#resolve')
     context.register_function(_cast, 'cast')
@@ -89,3 +111,6 @@ def register(context):
     context.register_function(_super2, 'super')
     context.register_function(_psuper2, 'psuper')
     context.register_function(_super, 'super')
+    context.register_function(_require, 'require')
+    context.register_function(_get_container, 'getContainer')
+
