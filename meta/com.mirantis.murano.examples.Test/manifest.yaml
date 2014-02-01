@@ -10,34 +10,36 @@ Inherits:
 
 Properties:
   p1:
-    Type: Integer
+    Type: $.int()
     Default: 99
   QQ:
-    Type: Integer
+    Type: $.int()
     Default: 0
   pt:
-    Type: Test2
+    Type: $.class(Test2).owned()
+  pt2:
+    Type: $.class(Test2)
 
 Workflow:
   initialize:
-    Body: []
+    Body:
 #      - $this.super($.initialize())
-#      - $.debugPrint('.ctor')
+      - $.debugPrint('.ctor')
 
   method1:
       Arguments:
         - t:
-            Type: Integer
+            Type: $.int()
         - z:
-            Type: Integer
+            Type: $.int()
             Default: 33
       Body:
 
-         - $.debugPrint($this.shadowed().p1)
-         - $.shadow()
-         - $.debugPrint($this.shadowed().p1)
+         #- $.debugPrint($this.shadowed().p1)
+         #- $.shadow()
+         #- $.debugPrint($this.shadowed().p1)
          #- $z: new(Test2, p => 15)
-         - Return:
+         - Return: $.pt
          #- $.p1: $.pt.method1(1, 44)
 #         - $heat: new(sys:Heat, $q).createStack(name2 => xxx, yyy)
 #         - $heat: new(sys:Heat).createStack(name2 => zzz, zzz)

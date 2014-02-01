@@ -1,54 +1,61 @@
-import json
-import types
 import uuid
 import yaml
 import helpers
 
 
 class MuranoObject(object):
-    def __init__(self, murano_class, object_store, context, object_id=None,
+    def __init__(self, murano_class, parent_obj, object_store, context, object_id=None,
                  frozen=False, known_classes=None):
         if known_classes is None:
             known_classes = {}
-        self._object_id = object_id or uuid.uuid4().hex
-        self._type = murano_class
-        self._properties = {}
-        self._object_store = object_store
-        self._parents = {}
-        self._frozen = frozen
+        self.__parent_obj = parent_obj
+        self.__object_id = object_id or uuid.uuid4().hex
+        self.__type = murano_class
+        self.__properties = {}
+        self.__object_store = object_store
+        self.__parents = {}
+        self.__frozen = frozen
+        self.__context = context
         for property_name in murano_class.properties:
             typespec = murano_class.get_property(property_name)
-            self._properties[property_name] = typespec.default
+            self.__properties[property_name] = typespec.default
         known_classes[murano_class.name] = self
         for parent in murano_class.parents:
             parent_type_name = parent.name
             if not parent_type_name in known_classes:
-                known_classes[parent_type_name] = self._parents[
+                known_classes[parent_type_name] = self.__parents[
                     parent_type_name] = parent.new(
-                        object_store, context, None,
-                        object_id=self._object_id,
+                        parent, object_store, context, None,
+                        object_id=self.__object_id,
                         frozen=frozen, known_classes=known_classes)
             else:
-                self._parents[parent_type_name] = \
+                self.__parents[parent_type_name] = \
                     known_classes[parent_type_name]
 
     def initialize(self, **kwargs):
-        frozen = self._frozen
-        self._frozen = False
+        frozen = self.__frozen
+        self.__frozen = False
         try:
-            for property_name, property_value in kwargs.iteritems():
+            for property_name in self.__type.properties:
+                property_value = kwargs.get(property_name)
                 self.set_property(property_name, property_value,
-                                  self._object_store)
+                                  self.__object_store)
+            for parent in self.__parents.values():
+                parent.initialize(**kwargs)
         finally:
-            self._frozen = frozen
+            self.__frozen = frozen
 
     @property
     def object_id(self):
-        return self._object_id
+        return self.__object_id
 
     @property
     def type(self):
-        return self._type
+        return self.__type
+
+    @property
+    def parent(self):
+        return self.__parent_obj
 
     def __getattr__(self, item):
         if item.startswith('__'):
@@ -57,12 +64,11 @@ class MuranoObject(object):
 
     def get_property(self, item, caller_class=None):
         #print 'caller_class', caller_class.name
-        if item in self._properties and \
-                self._is_accessible(item, caller_class):
-            return self._properties[item]
+        if item in self.__properties:
+            return self.__properties[item]
         i = 0
         result = None
-        for parent in self._parents.values():
+        for parent in self.__parents.values():
             try:
                 result = parent.get_property(item, caller_class)
                 i += 1
@@ -74,36 +80,27 @@ class MuranoObject(object):
             raise AttributeError()
         return result
 
-    def set_property(self, key, value, object_store, caller_class=None):
-        if self._frozen:
+    def set_property(self, key, value, caller_class=None):
+        if self.__frozen:
             raise NotImplementedError()
-        if key in self._properties and self._is_accessible(key, caller_class):
-            spec = self._type.get_property(key)
-            self._properties[key] = spec.validate(
-                value, object_store)
+        if key in self.__properties:
+            spec = self.__type.get_property(key)
+            self.__properties[key] = spec.validate(
+                value, self, self.__context, self.__object_store)
         else:
-            for parent in self._parents.values():
+            for parent in self.__parents.values():
                 try:
-                    parent.set_property(key, value, object_store, caller_class)
+                    parent.set_property(key, value, caller_class)
                     return
                 except AttributeError:
                     continue
             raise AttributeError(key)
 
-    def _is_accessible(self, property_name, caller_class):
-        spec = self._type.get_property(property_name)
-        if not spec:
-            return False
-        if spec.access == 'Public':
-            return True
-        if caller_class == self.type:
-            return True
-        return False
 
     def cast(self, type):
         if self.type == type:
             return self
-        for parent in self._parents.values():
+        for parent in self.__parents.values():
             try:
                 return parent.cast(type)
             except TypeError as e:
@@ -115,9 +112,9 @@ class MuranoObject(object):
 
     def to_dictionary(self):
         result = {}
-        for parent in self._parents.values():
+        for parent in self.__parents.values():
             result.update(parent.to_dictionary())
         result.update({'?': {'type': self.type.name, 'id': self.object_id}})
-        result.update(self._properties)
+        result.update(self.__properties)
         return result
 

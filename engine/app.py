@@ -80,13 +80,13 @@ class EngineService(service.Service):
 
     def debug_print(self, msg):
         print '>>', msg
-        eventlet.sleep(2)
-        print '<<', msg
+        #eventlet.sleep(2)
+        #print '<<', msg
         return 14
     def debug_print2(self, msg):
         print '>>>', msg
-        eventlet.sleep(3)
-        print '<<<', msg
+        #eventlet.sleep(3)
+        #print '<<<', msg
         return 15
 
     def test(self):
@@ -103,21 +103,41 @@ class EngineService(service.Service):
         object_class.add_method('debugPrint', self.debug_print)
         object_class.add_method('debugPrint2', self.debug_print2)
 
-        objects = executor.load({
-            '123': {'?': {'type': 'com.mirantis.murano.examples.Test'},
-                     'p1': 88, 'pt': '345' },
-            '345': {'?': {'type': 'com.mirantis.murano.examples.Test2'},
-                    'p': 777}
+        obj = executor.load({
+            '?': {
+                'id': '123',
+                'type': 'com.mirantis.murano.examples.Test'
+            },
+            'p1': 88,
+            'pt': {
+                '?': {
+                    'type': 'com.mirantis.murano.examples.Test2',
+                    'id': '456'
+                },
+                'p': 777,
+                'pt2': {
+                    '?': {
+                        'type': 'com.mirantis.murano.examples.Test3',
+                        'id': 'xxx_test3'
+                    }
+                }
+            }
         })
+
         executor.load_shadow({
-            '123': {'?': {'type': 'com.mirantis.murano.examples.Test'},
-                     'p1': 99, 'pt': '345' }
+            '?': {
+                'id': '123',
+                'type': 'com.mirantis.murano.examples.Test'
+            },
+            'p1': 99,
+            #'pt': '345'
         })
+
         # objects = object_store.load({
         #     '123': {'?': {'type': 'com.mirantis.murano.examples.Test'}},
         # })
 
-        obj = [t for t in objects if t.object_id == '123'][0]
+
         print obj
         print '---------------------------------------------------------'
         print

@@ -12,7 +12,7 @@ def register_macro(cls):
 
 
 class DslExpression(object):
-    def execute(self, context, object_store, murano_class):
+    def execute(self, context, murano_class):
         pass
 
 
@@ -40,10 +40,10 @@ class Statement(DslExpression):
     def expression(self):
         return self._expression
 
-    def execute(self, context, object_store, murano_class):
+    def execute(self, context, murano_class):
         result = helpers.evaluate(self.expression, context)
         if self.destination:
-            self.destination.set(result, context, object_store, murano_class)
+            self.destination.set(result, context, murano_class)
 
         return result
 

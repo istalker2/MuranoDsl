@@ -6,7 +6,7 @@ from eventlet.event import Event
 import types
 import expressions
 import exceptions
-from yaql.context import EvalArg
+from yaql.context import EvalArg, Context
 from engine.dsl import helpers, MuranoObject, ObjectStore
 import dsl_yaql_functions
 
@@ -49,11 +49,16 @@ class MuranoDslExecutor(object):
                 continue
             arguments_scheme = method.arguments_scheme
             try:
-                params = self._evaluate_parameters(
-                    arguments_scheme, context, *args)
+                try:
+                    params = self._evaluate_parameters(
+                        arguments_scheme, context, this, *args)
+                except Exception as e:
+                    print e
+                    params = self._evaluate_parameters(
+                        arguments_scheme, context, this, *args)
                 delegates.append(functools.partial(
                     self._invoke_method_implementation,
-                    method, this, context, params))
+                    method, this, params))
             except TypeError:
                 continue
         if len(delegates) < 1:
@@ -63,7 +68,7 @@ class MuranoDslExecutor(object):
         else:
             return delegates[0]()
 
-    def _invoke_method_implementation(self, method, this, context, params):
+    def _invoke_method_implementation(self, method, this, params):
         body = method.body
         if not body:
             return None
@@ -82,29 +87,28 @@ class MuranoDslExecutor(object):
         if event:
             if marker == thread_marker:
                 return self._invoke_method_implementation_gt(
-                    body, this, context, params, method.murano_class)
+                    body, this, params, method.murano_class)
             event.wait()
 
         event = Event()
         self._locks[(method_id, this_id)] = (event, thread_marker)
         gt = eventlet.spawn(self._invoke_method_implementation_gt, body,
-                            this, context, params, method.murano_class,
+                            this, params, method.murano_class,
                             thread_marker)
         result = gt.wait()
         del self._locks[(method_id, this_id)]
         event.send()
         return result
 
-    def _invoke_method_implementation_gt(self, body, this, context,
+    def _invoke_method_implementation_gt(self, body, this,
                                          params, murano_class,
                                          thread_marker=None):
         if thread_marker:
             current_thread = eventlet.greenthread.getcurrent()
             current_thread._murano_dsl_thread_marker = thread_marker
-        context.set_data(this, '?this')
         if callable(body):
             if '_context' in inspect.getargspec(body).args:
-                params['_context'] = context
+                params['_context'] = self._create_context(this, murano_class)
             if inspect.ismethod(body) and not body.__self__:
                 return body(this.cast(murano_class), **params)
             else:
@@ -114,7 +118,7 @@ class MuranoDslExecutor(object):
         else:
             raise ValueError()
 
-    def _evaluate_parameters(self, arguments_scheme, context, *args):
+    def _evaluate_parameters(self, arguments_scheme, context, this, *args):
         arg_names = list(arguments_scheme.keys())
         parameter_values = {}
         i = 0
@@ -136,23 +140,25 @@ class MuranoDslExecutor(object):
                 value = value()
             arg_spec = arguments_scheme[name]
             parameter_values[name] = arg_spec.validate(
-                value, self._object_store)
+                value, this, self._root_context, self._object_store)
 
         for name, arg_spec in arguments_scheme.iteritems():
             if name not in parameter_values:
                 if not arg_spec.has_default:
                     raise TypeError()
                 parameter_values[name] = arg_spec.validate(
-                    arg_spec.default, self._object_store)
+                    arg_spec.default, this, self._root_context,
+                    self._object_store)
 
         return parameter_values
 
-    def create_context(self, this, murano_class):
+    def _create_context(self, this, murano_class):
         new_context = self._class_loader.create_local_context(
             parent_context=self._root_context,
             murano_class=murano_class)
         new_context.set_data(this)
         new_context.set_data(this, '$this')
+        new_context.set_data(this, '$?this')
         new_context.set_data(murano_class, '?type')
 
         @EvalArg('obj', arg_type=MuranoObject)
@@ -172,14 +178,13 @@ class MuranoDslExecutor(object):
         return new_context
 
     def execute(self, expression, murano_class, this, parameters={}):
-        new_context = self.create_context(this, murano_class)
+        new_context = self._create_context(this, murano_class)
         for key, value in parameters.iteritems():
             new_context.set_data(value, key)
-        return expression.execute(
-            new_context, self._object_store, murano_class)
+        return expression.execute(new_context, murano_class)
 
     def load(self, data):
-        return self._object_store.load(data, self._root_context)
+        return self._object_store.load(data, None, self._root_context)
 
     def load_shadow(self, data):
-        return self._shadow_object_store.load(data, self._root_context)
+        return self._shadow_object_store.load(data, None, self._root_context)

@@ -23,26 +23,27 @@ class ObjectStore(object):
     def put(self, murano_object):
         self._store[murano_object.object_id] = murano_object
 
-    def load(self, data, context):
+    def load(self, value, parent, context):
         tmp_store = ObjectStore(self._class_loader, self)
-        for key, value in data.iteritems():
-            if '?' not in value or 'type' not in value['?']:
-                raise ValueError(key)
-            system_key = value['?']
-            del value['?']
-            obj_type = system_key['type']
-            class_obj = self._class_loader.get_class(obj_type)
-            if not class_obj:
-                raise ValueError()
-            obj = class_obj.new(tmp_store, context=context, object_id=key,
-                                frozen=self._frozen)
-            tmp_store._store[key] = obj
-            obj.initialize(**value)
-        loaded_objects = tmp_store._store.values()
-        executor = helpers.get_executor(context)
-        for obj in loaded_objects:
+
+        if '?' not in value or 'type' not in value['?']:
+            raise ValueError()
+        system_key = value['?']
+        del value['?']
+        object_id = system_key['id']
+        obj_type = system_key['type']
+        class_obj = self._class_loader.get_class(obj_type)
+        if not class_obj:
+            raise ValueError()
+        obj = class_obj.new(parent, tmp_store, context=context,
+                            object_id=object_id, frozen=self._frozen)
+        tmp_store._store[object_id] = obj
+        obj.initialize(**value)
+
+        if not self._frozen:
+            executor = helpers.get_executor(context)
             methods = obj.type.find_method('initialize')
             for cls, method in methods:
                 cls.invoke(method, executor, obj, {})
         self._store.update(tmp_store._store)
-        return loaded_objects
+        return obj

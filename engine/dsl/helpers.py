@@ -9,16 +9,22 @@ import yaql.expressions
 from eventlet.greenpool import GreenPool
 
 
-def serialize(value):
+def serialize(value, memo=None):
+    if memo is None:
+        memo = set()
     if isinstance(value, types.DictionaryType):
         result = {}
         for d_key, d_value in value.iteritems():
-            result[d_key] = serialize(d_value)
+            result[d_key] = serialize(d_value, memo)
         return result
     elif isinstance(value, murano_object.MuranoObject):
-        return serialize(value.to_dictionary())
+        if not value.object_id in memo:
+            memo.add(value.object_id)
+            return serialize(value.to_dictionary(), memo)
+        else:
+            return value.object_id
     elif isinstance(value, types.ListType):
-        return [serialize(t) for t in value]
+        return [serialize(t, memo) for t in value]
     else:
         return value
 

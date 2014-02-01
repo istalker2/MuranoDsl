@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import inspect
 import types
+from engine.dsl.yaql_expression import YaqlExpression
 
 import typespec
 import macros
@@ -56,15 +57,16 @@ class MuranoMethod(object):
 
     def _generate_arguments_scheme(self, func):
         func_info = inspect.getargspec(func)
-        data = [(name, {'Type': 'Object'}) for name in func_info.args]
+        data = [(name, {'Type': YaqlExpression('$')})
+                for name in func_info.args]
         if inspect.ismethod(func):
             data = data[1:]
         defaults = func_info.defaults or tuple()
         for i in xrange(len(defaults)):
             data[i + len(data) - len(defaults)][1]['Default'] = defaults[i]
         result = OrderedDict([
-            (name, typespec.ArgumentSpec(declaration,
-                                             self._namespace_resolver))
+            (name, typespec.ArgumentSpec(
+                declaration, self._namespace_resolver))
             for name, declaration in data])
         if '_context' in result:
             del result['_context']

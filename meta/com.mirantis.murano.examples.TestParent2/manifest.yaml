@@ -5,7 +5,7 @@ Name: TestParent
 
 Properties:
   parentProperty:
-    Type: Integer
+    Type: $.int()
     Default: 666
     Access: Public
 
@@ -17,7 +17,7 @@ Workflow:
   parent_method:
       Arguments:
         - t:
-            Type: Integer
+            Type: $.int()
       Body:
         - $.parentProperty = $t
 

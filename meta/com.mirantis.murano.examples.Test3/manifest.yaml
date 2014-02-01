@@ -1,0 +1,8 @@
+Namespaces:
+    =: com.mirantis.murano.examples
+    std: com.mirantis.murano
+Name: Test3
+
+Workflow:
+  method1:
+      Body: []

@@ -12,19 +12,19 @@ class CodeBlock(expressions.DslExpression):
             body = [body]
         self.code_block = map(expressions.parse_expression, body)
 
-    def execute(self, context, object_store, murano_class):
+    def execute(self, context, murano_class):
         try:
             for expr in self.code_block:
-                expr.execute(context, object_store, murano_class)
+                expr.execute(context, murano_class)
         except exceptions.BreakException:
             return
 
 
 class MethodBlock(CodeBlock):
-    def execute(self, context, object_store, murano_class):
+    def execute(self, context, murano_class):
         try:
             super(MethodBlock, self).execute(
-                context, object_store, murano_class)
+                context, murano_class)
         except exceptions.ReturnException as e:
             return e.value
         else:
@@ -38,7 +38,7 @@ class ReturnMacro(expressions.DslExpression):
             raise SyntaxError()
         self._value = body
 
-    def execute(self, context, object_store, murano_class):
+    def execute(self, context, murano_class):
         raise exceptions.ReturnException(
             helpers.evaluate(self._value, context))
 
@@ -49,7 +49,7 @@ class BreakMacro(expressions.DslExpression):
         if e or body:
             raise SyntaxError()
 
-    def execute(self, context, object_store, murano_class):
+    def execute(self, context, murano_class):
         raise exceptions.BreakException()
 
 
@@ -67,12 +67,12 @@ class ParallelMacro(CodeBlock):
         else:
             self._limit = len(self.code_block)
 
-    def execute(self, context, object_store, murano_class):
+    def execute(self, context, murano_class):
         if not self.code_block:
             return
         gp = GreenPool(helpers.evaluate(self._limit, context))
         for expr in self.code_block:
-            gp.spawn_n(expr.execute, context, object_store, murano_class)
+            gp.spawn_n(expr.execute, context, murano_class)
         gp.waitall()
 
 

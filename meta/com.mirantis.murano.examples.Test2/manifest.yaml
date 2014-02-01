@@ -5,8 +5,10 @@ Name: Test2
 
 Properties:
   p:
-    Type: Integer
+    Type: $.int()
     Default: 11
+  pt2:
+    Type: $.class(Test3)
 
 Workflow:
   method1:

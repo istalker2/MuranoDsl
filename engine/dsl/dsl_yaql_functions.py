@@ -46,9 +46,8 @@ def _cast(context, value, type):
 @EvalArg('name', str)
 @ContextAware()
 def _new(context, name, *args):
-    if not '.' in name:
-        murano_class = context.get_data('$?type')
-        name = murano_class.namespace_resolver.resolve_name(name)
+    murano_class = helpers.get_type(context)
+    name = murano_class.namespace_resolver.resolve_name(name)
     parameters = {}
     arg_values = [t() for t in args]
     if len(arg_values) == 1 and isinstance(
@@ -64,7 +63,7 @@ def _new(context, name, *args):
     object_store = helpers.get_object_store(context)
     class_loader = helpers.get_class_loader(context)
     return class_loader.get_class(name).new(
-        object_store, context, parameters=parameters)
+        None, object_store, context, parameters=parameters)
 
 
 @EvalArg('value', MuranoObject)

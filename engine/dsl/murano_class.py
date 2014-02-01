@@ -77,19 +77,19 @@ class MuranoClass(object):
         return executor.invoke_method(name, this, None, self, *args)
 
     def is_compatible(self, obj):
-        if not isinstance(obj, MuranoObject):
-            return False
-        if obj.type is self:
+        if isinstance(obj, MuranoObject):
+            return self.is_compatible(obj.type)
+        if obj is self:
             return True
-        for t in self.parents:
-            if t.is_compatible(obj):
+        for parent in obj.parents:
+            if self.is_compatible(parent):
                 return True
         return False
 
-    def new(self, object_store, context, parameters=None, object_id=None,
-            frozen=False, **kwargs):
-        obj = MuranoObject(self, object_store, context, object_id=object_id,
-                           frozen=frozen, **kwargs)
+    def new(self, parent, object_store, context, parameters=None,
+            object_id=None, frozen=False, **kwargs):
+        obj = MuranoObject(self, parent, object_store, context,
+                           object_id=object_id, frozen=frozen, **kwargs)
         if parameters is not None:
             obj.initialize(**parameters)
         return obj

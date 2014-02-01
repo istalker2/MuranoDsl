@@ -80,15 +80,17 @@ class MuranoClassLoader(object):
 
         if inspect.isclass(cls):
             if issubclass(cls, MuranoObject):
-                def create_cls(object_store, context, parameters,
+                def create_cls(parent, object_store, context, parameters,
                                object_id=None, **kwargs):
-                    result = cls(murano_class, object_store, context,
+                    result = cls(murano_class, parent, object_store, context,
                                  object_id=object_id, **kwargs)
                     if parameters is not None:
                         parameters = self._fix_parameters(parameters)
-                        if '_context' in inspect.getargspec(
-                                result.initialize).args:
+                        argspec = inspect.getargspec(result.initialize).args
+                        if '_context' in argspec:
                             parameters['_context'] = context
+                        if '_parent' in argspec:
+                            parameters['_parent'] = parent
                         result.initialize(**parameters)
                     return result
                 murano_class.new = create_cls
