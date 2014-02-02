@@ -55,7 +55,8 @@ class HeatStack(engine.dsl.MuranoObject):
                 stack_id='{0}/{1}'.format(
                     stack_info.stack_name,
                     stack_info.id))
-            self._template.update(template)
+            # template = {}
+            self._template = template
             self._parameters.update(stack_info.parameters)
             self._applied = True
             return self._template.copy()
@@ -134,9 +135,13 @@ class HeatStack(engine.dsl.MuranoObject):
     def output(self):
         return self._wait_state(lambda: True)
 
-    def update(self):
-        if self._applied:
+    def push(self):
+        if self._applied or self._template is None:
             return
+
+        # print 'Pushing', self._template
+        # self._applied = True
+        # return {}
 
         current_status = self._get_status()
         if current_status == 'NOT_FOUND':
@@ -146,18 +151,17 @@ class HeatStack(engine.dsl.MuranoObject):
                 template=self._template,
                 disable_rollback=False)
 
-            outs = self._wait_state(
+            self._wait_state(
                 lambda status: status == 'CREATE_COMPLETE')
         else:
             self._heat_client.stacks.update(
                 stack_id=self._name,
                 parameters=self._parameters,
                 template=self._template)
-            outs = self._wait_state(
+            self._wait_state(
                 lambda status: status == 'UPDATE_COMPLETE')
 
         self._applied = True
-        return outs
 
     def delete(self):
         if not self.current():

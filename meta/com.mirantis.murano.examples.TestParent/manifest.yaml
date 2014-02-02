@@ -5,7 +5,7 @@ Name: TestParent
 
 Properties:
   parentProperty:
-    Type: $.int()
+    Contract: $.int()
     Default: 666
 
 Workflow:
@@ -16,7 +16,7 @@ Workflow:
   parent_method:
       Arguments:
         - t:
-            Type: $.int()
+            Contract: $.int()
       Body:
         - $.parentProperty = $t
 

@@ -1,0 +1,48 @@
+{
+    "?": {
+        "id": "env1",
+        "type": "com.mirantis.murano.Environment"
+    },
+    "name": "MyEnvironment",
+    "applications": [{
+        "?": {
+            "id": "ad1",
+            "type": "com.mirantis.murano.services.windows.activeDirectory.ActiveDirectory"
+        },
+        "name": "myDomain",
+        "primaryController": {
+            "?": {
+                "id": "controller1",
+                "type": "com.mirantis.murano.services.windows.activeDirectory.PrimaryController"
+            },
+            "host": {
+                "?": {
+                    "id": "host1",
+                    "type": "com.mirantis.murano.services.windows.Host"
+                },
+                "adminPassword": "AdminPassw0rd",
+                "name": "myHostName",
+                "flavor": "large",
+                "image": "winImage"
+            }
+        },
+        "secondaryControllers": [
+            {
+                "?": {
+                    "id": "controller2",
+                    "type": "com.mirantis.murano.services.windows.activeDirectory.SecondaryController"
+                },
+                "host": {
+                    "?": {
+                        "id": "host2",
+                        "type": "com.mirantis.murano.services.windows.Host"
+                    },
+                    "adminPassword": "AdminPassw0rd",
+                    "name": "myHostName2",
+                    "flavor": "large",
+                    "image": "winImage"
+                }
+            }
+        ]
+    }]
+}

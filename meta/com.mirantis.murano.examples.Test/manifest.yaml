@@ -10,15 +10,15 @@ Inherits:
 
 Properties:
   p1:
-    Type: $.int()
+    Contract: $.int()
     Default: 99
   QQ:
-    Type: $.int()
+    Contract: $.int()
     Default: 0
   pt:
-    Type: $.class(Test2).owned()
+    Contract: $.class(Test2).owned()
   pt2:
-    Type: $.class(Test2)
+    Contract: $.class(Test2)
 
 Workflow:
   initialize:
@@ -29,9 +29,9 @@ Workflow:
   method1:
       Arguments:
         - t:
-            Type: $.int()
+            Contract: $.int()
         - z:
-            Type: $.int()
+            Contract: $.int()
             Default: 33
       Body:
          - $.pt.pt2.method1()

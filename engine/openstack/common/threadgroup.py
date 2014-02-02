@@ -1,3 +1,5 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
 # Copyright 2012 Red Hat, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -46,9 +48,6 @@ class Thread(object):
     def wait(self):
         return self.thread.wait()
 
-    def link(self, func, *args, **kwargs):
-        self.thread.link(func, *args, **kwargs)
-
 
 class ThreadGroup(object):
     """The point of the ThreadGroup classis to:
@@ -80,17 +79,13 @@ class ThreadGroup(object):
         gt = self.pool.spawn(callback, *args, **kwargs)
         th = Thread(gt, self)
         self.threads.append(th)
-        return th
 
     def thread_done(self, thread):
         self.threads.remove(thread)
 
     def stop(self):
         current = greenthread.getcurrent()
-
-        # Iterate over a copy of self.threads so thread_done doesn't
-        # modify the list while we're iterating
-        for x in self.threads[:]:
+        for x in self.threads:
             if x is current:
                 # don't kill the current thread.
                 continue
@@ -115,10 +110,7 @@ class ThreadGroup(object):
             except Exception as ex:
                 LOG.exception(ex)
         current = greenthread.getcurrent()
-
-        # Iterate over a copy of self.threads so thread_done doesn't
-        # modify the list while we're iterating
-        for x in self.threads[:]:
+        for x in self.threads:
             if x is current:
                 continue
             try:

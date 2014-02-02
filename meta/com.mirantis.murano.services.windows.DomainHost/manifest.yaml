@@ -11,23 +11,14 @@ Inherits: Host
 
 Properties:
   domain:
-    Type: ad:ActiveDirectory
-
-  resources:
-    Type: sys:Resources
-    Access: System
+    Contract: $.class(ad:ActiveDirectory).notNull()
 
 Workflow:
-  std:Deploy:
-    Access: Public
+  deploy:
     Arguments:
-      - environment:
-          Type: std:Environment
     Body:
-      - std:Deploy super():
-          environment: $environment
-      - JoinDomain:
-          domain: $.domain
+      - $.super($.deploy())
+      - $.joinDomain($.domain)
 
 
 

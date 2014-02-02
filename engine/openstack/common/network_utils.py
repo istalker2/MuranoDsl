@@ -1,3 +1,5 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
 # Copyright 2012 OpenStack Foundation.
 # All Rights Reserved.
 #
@@ -17,7 +19,7 @@
 Network-related utilities and helper functions.
 """
 
-from engine.openstack.common.py3kcompat import urlutils
+import urlparse
 
 
 def parse_host_port(address, default_port=None):
@@ -70,10 +72,10 @@ def urlsplit(url, scheme='', allow_fragments=True):
 
     The parameters are the same as urlparse.urlsplit.
     """
-    scheme, netloc, path, query, fragment = urlutils.urlsplit(
+    scheme, netloc, path, query, fragment = urlparse.urlsplit(
         url, scheme, allow_fragments)
     if allow_fragments and '#' in path:
         path, fragment = path.split('#', 1)
     if '?' in path:
         path, query = path.split('?', 1)
-    return urlutils.SplitResult(scheme, netloc, path, query, fragment)
+    return urlparse.SplitResult(scheme, netloc, path, query, fragment)

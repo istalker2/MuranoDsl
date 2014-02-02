@@ -44,7 +44,7 @@ def _convert_macro_parameter(macro, mappings):
     if replaced[0]:
         return result
     else:
-        return mappings.get(macro)
+        return mappings[macro]
 
 
 @EvalArg('format', str)

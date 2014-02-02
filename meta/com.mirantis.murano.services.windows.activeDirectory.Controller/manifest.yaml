@@ -8,15 +8,12 @@ Name: Controller
 
 Properties:
   host:
-    Type: win:Host
-    Mandatory: true
+    Contract: $.class(win:Host).notNull()
+
+  recoveryPassword:
+    Contract: $.string().notNull()
+    Default: P@ssw0rd
 
 Workflow:
-  std:Deploy:
-    Access: Public
-    Arguments:
-      - environment:
-          Type: std:Environment
-    Body:
-      - std:Deploy $.host:
-          environment: $environment
+  deploy:
+    Body: $.host.deploy()

@@ -1,0 +1,39 @@
+Namespaces:
+    =: com.mirantis.murano
+    sys: com.mirantis.murano.system
+
+Name: Environment
+
+Properties:
+  name:
+    Contract: $.string().notNull()
+
+  applications:
+    Contract: [$.class(Application).owned().notNull()]
+
+  agentListener:
+    Contract: $.class(sys:AgentListener)
+
+  stack:
+    Contract: $.class(sys:HeatStack)
+
+Workflow:
+  initialize:
+    Body:
+      - $.debugPrint('Env.ctor')
+      - $this.agentListener: new(sys:AgentListener, name => $.name)
+      - $this.stack: new(sys:HeatStack, name => $.name)
+
+
+  deploy:
+    Body:
+      - $.agentListener.start()
+      - $.applications.pselect($.deploy())
+      - $.sleep(1)
+      - $.agentListener.stop()
+
+
+
+
+
+

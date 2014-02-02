@@ -1,10 +1,11 @@
 from muranocommon.messaging import Message
-from . import create_rmq_client
+from common import create_rmq_client
 from engine.dsl import classname, MuranoObject
 import eventlet.event
 import os
 import uuid
 import types
+from engine.dsl.yaql_expression import YaqlExpression
 
 
 class AgentException(Exception):
@@ -13,26 +14,32 @@ class AgentException(Exception):
 
 @classname('com.mirantis.murano.system.Agent')
 class Agent(MuranoObject):
-    def initialize(self, host, environment, resource_manager):
-        self._queue = ('e%s-h%s' % (
-            environment.object_id(), host.object_id())).lower()
-        self._resource_manager = resource_manager
-        self._listener = environment.agentListener
+    def initialize(self, _context, host):
+        environment = YaqlExpression(
+            "$host.find('com.mirantis.murano.Environment').require()"
+        ).evaluate(_context)
+
+        self._queue = str('e%s-h%s' % (
+            environment.object_id, host.object_id)).lower()
+        self._environment = environment
+
 
     def _send(self, template, wait_results):
-        client = create_rmq_client()
-        final_template, msg_id = self.build_execution_plan(template)
 
+        msg_id = template.get('ID', uuid.uuid4().hex)
         if wait_results:
             event = eventlet.event.Event()
-            self._listener.subscribe(msg_id, event)
-            self._listener.start()
+            listener = self._environment.agentListener
+            listener.subscribe(msg_id, event)
+            listener.start()
 
         msg = Message()
         msg.body = template
         msg.id = msg_id
-        client.declare(self._queue, enable_ha=True, ttl=86400000)
-        client.send(message=msg, key=self._queue)
+
+        with create_rmq_client() as client:
+            client.declare(self._queue, enable_ha=True, ttl=86400000)
+            client.send(message=msg, key=self._queue)
 
         if wait_results:
             result = event.wait()
@@ -47,11 +54,19 @@ class Agent(MuranoObject):
         else:
             return None
 
-    def call(self, template):
-        return self._send(template, True)
+    def call(self, template, resources):
+        plan = self.buildExecutionPlan(template, resources)
+        return self._send(plan, True)
 
-    def send(self, template):
-        return self._send(template, False)
+    def send(self, template, resources):
+        plan = self.buildExecutionPlan(template, resources)
+        return self._send(plan, False)
+
+    def callRaw(self, plan):
+        return self._send(plan, True)
+
+    def sendRaw(self, plan):
+        return self._send(plan, False)
 
     def _process_v1_result(self, result):
         if result['IsException']:
@@ -99,27 +114,27 @@ class Agent(MuranoObject):
             'timestamp': self.datetime.datetime.now().isoformat()
         }
 
-    def build_execution_plan(self, template):
+    def buildExecutionPlan(self, template, resources):
         if not isinstance(template, types.DictionaryType):
             raise ValueError('Incorrect execution plan ')
         format_version = template.get('FormatVersion')
         if not format_version or format_version.startswith('1.'):
-            return self._build_v1_execution_plan(template)
+            return self._build_v1_execution_plan(template, resources)
         else:
-            return self._build_v2_execution_plan(template)
+            return self._build_v2_execution_plan(template, resources)
 
-    def _build_v1_execution_plan(self, template):
+    def _build_v1_execution_plan(self, template, resources):
         scripts_folder = 'scripts'
         script_files = template.get('Scripts', [])
         scripts = []
         for script in script_files:
             script_path = os.path.join(scripts_folder, script)
-            scripts.append(self._resource_manager.string(
+            scripts.append(resources.string(
                 script_path).encode('base64'))
         template['Scripts'] = scripts
-        return template, uuid.uuid4().hex
+        return template
 
-    def _build_v2_execution_plan(self, template):
+    def _build_v2_execution_plan(self, template, resources):
         scripts_folder = 'scripts'
         plan_id = uuid.uuid4().hex
         template['ID'] = plan_id
@@ -135,15 +150,17 @@ class Agent(MuranoObject):
             if 'EntryPoint' not in script:
                 raise ValueError('No entry point in script ' + name)
             script['EntryPoint'] = self._place_file(
-                scripts_folder, script['EntryPoint'], template, files)
+                scripts_folder, script['EntryPoint'],
+                template, files, resources)
             if 'Files' in script:
                 for i in range(0, len(script['Files'])):
                     script['Files'][i] = self._place_file(
-                        scripts_folder, script['Files'][i], template, files)
+                        scripts_folder, script['Files'][i],
+                        template, files, resources)
 
-        return template, plan_id
+        return template
 
-    def _place_file(self, folder, name, template, files):
+    def _place_file(self, folder, name, template, files, resources):
         use_base64 = False
         if name.startswith('<') and name.endswith('>'):
             use_base64 = True
@@ -153,7 +170,7 @@ class Agent(MuranoObject):
 
         file_id = uuid.uuid4().hex
         body_type = 'Base64' if use_base64 else 'Text'
-        body = self._resource_manager.string(os.path.join(folder, name))
+        body = resources.string(os.path.join(folder, name))
         if use_base64:
             body = body.encode('base64')
 

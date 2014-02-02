@@ -25,13 +25,13 @@ CONF = cfg.CONF
 def notify(_context, message):
     """Notifies the recipient of the desired event given the model.
 
-    Log notifications using OpenStack's default logging system.
+    Log notifications using openstack's default logging system.
     """
 
     priority = message.get('priority',
                            CONF.default_notification_level)
     priority = priority.lower()
     logger = logging.getLogger(
-        'engine.openstack.common.notification.%s' %
+        'conductor.openstack.common.notification.%s' %
         message['event_type'])
     getattr(logger, priority)(jsonutils.dumps(message))

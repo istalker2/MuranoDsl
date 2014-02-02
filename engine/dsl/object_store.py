@@ -29,7 +29,7 @@ class ObjectStore(object):
         if '?' not in value or 'type' not in value['?']:
             raise ValueError()
         system_key = value['?']
-        del value['?']
+        #del value['?']
         object_id = system_key['id']
         obj_type = system_key['type']
         class_obj = self._class_loader.get_class(obj_type)

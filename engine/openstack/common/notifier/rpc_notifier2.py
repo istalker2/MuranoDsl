@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 
 notification_topic_opt = cfg.ListOpt(
     'topics', default=['notifications', ],
-    help='AMQP topic(s) used for OpenStack notifications')
+    help='AMQP topic(s) used for openstack notifications')
 
 opt_group = cfg.OptGroup(name='rpc_notifier2',
                          title='Options for rpc_notifier2')
@@ -49,5 +49,4 @@ def notify(context, message):
             rpc.notify(context, topic, message, envelope=True)
         except Exception:
             LOG.exception(_("Could not send notification to %(topic)s. "
-                            "Payload=%(message)s"),
-                          {"topic": topic, "message": message})
+                            "Payload=%(message)s"), locals())

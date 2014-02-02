@@ -1,34 +1,29 @@
 Namespaces:
-    =: com.mirantis.murano.services.windows.activeDirectory
-    std: com.mirantis.murano
-    sys: com.mirantis.murano.system
-    win: com.mirantis.murano.services.windows
+  =: com.mirantis.murano.services.windows.activeDirectory
+  std: com.mirantis.murano
+  sys: com.mirantis.murano.system
 
-Name: PrimaryController
+Name: SecondaryController
 
 Inherits: Controller
 
 Workflow:
-  std:Deploy:
-    Access: Public
-    Arguments:
-      - environment:
-          Type: std:Environment
-      - domain:
-          Type: ActiveDirectory
+  initialize:
     Body:
-      - std:Deploy super():
-          environment: $environment
+      - $.super($.initialize())
+      - $.domain: $.find(ActiveDirectory).require()
 
-      - JoinDomain $.host:
-          domain: $domain
-
-      - $template: $.resources.json('CreateSecondaryDC.template')
-      - $ep:
-          $template.with(domain => $domain.name).
-            with(recoveryPassword => $.recoveryPassword)
-
-      - SendCommand $.host:
-          executionPlan: $ep
-
-
+  deploy:
+    Body:
+      - $.debugPrint('Deploying Secondary Controller for domain {0}'.format($this.domain.name))
+      - $.super($.deploy())
+      - $.host.joinDomain($.domain)
+      - $resources: new(sys:Resources)
+      - $template: $resources.json('CreateSecondaryDC.template').bind(dict(
+            domain => $.domain.name,
+            recoveryPassword => $.recoveryPassword,
+            domainAccountName => $.domain.adminAccountName,
+            domainPassword => $.domain.adminPassword
+          ))
+      - $.host.agent.call($template, $resources)
+#

@@ -5,10 +5,10 @@ Name: Test2
 
 Properties:
   p:
-    Type: $.int()
+    Contract: $.int()
     Default: 11
   pt2:
-    Type: $.class(Test3)
+    Contract: $.class(Test3)
 
 Workflow:
   method1:

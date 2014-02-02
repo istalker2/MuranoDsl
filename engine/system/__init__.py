@@ -1,8 +1,9 @@
-from muranocommon.messaging import MqClient
 import inspect
 from engine.dsl import classname
-from engine.system import heat_stack, resource_manager
-from engine import config as cfg
+from agent import Agent
+from agent_listener import AgentListener
+from heat_stack import HeatStack
+from resource_manager import ResourceManager
 
 
 def _auto_register(class_loader):
@@ -20,22 +21,13 @@ def register(class_loader, path):
     _auto_register(class_loader)
 
     @classname('com.mirantis.murano.system.Resources')
-    class ResolurceManagerWrapper(resource_manager.ResourceManager):
+    class ResolurceManagerWrapper(ResourceManager):
         def initialize(self, _context, _class=None):
             super(ResolurceManagerWrapper, self).initialize(
                 path, _context, _class)
 
     class_loader.import_class(ResolurceManagerWrapper)
+    class_loader.import_class(AgentListener)
+    class_loader.import_class(Agent)
+    class_loader.import_class(HeatStack)
 
-def create_rmq_client():
-    rabbitmq = cfg.CONF.rabbitmq
-    connection_params = {
-        'login': rabbitmq.login,
-        'password': rabbitmq.password,
-        'host': rabbitmq.host,
-        'port': rabbitmq.port,
-        'virtual_host': rabbitmq.virtual_host,
-        'ssl': rabbitmq.ssl,
-        'ca_certs': rabbitmq.ca_certs.strip() or None
-    }
-    return MqClient(**connection_params)

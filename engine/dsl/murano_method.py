@@ -17,25 +17,19 @@ class MuranoMethod(object):
             self._body = payload
             self._arguments_scheme = self._generate_arguments_scheme(payload)
         else:
-            self._body = self._prepare_body(payload.get('Body', []))
-            arguments_scheme = payload.get('Arguments')
-            if arguments_scheme is None:
-                self._arguments_scheme = {}
-            else:
-                if isinstance(arguments_scheme, types.DictionaryType):
-                    self._arguments_scheme = \
-                        typespec.ArgumentSpec(arguments_scheme,
-                                                  self._namespace_resolver)
-                else:
-                    self._arguments_scheme = OrderedDict()
-                    for record in arguments_scheme:
-                        if not isinstance(record, types.DictionaryType) \
-                                or len(record) > 1:
-                                raise ValueError()
-                        name = record.keys()[0]
-                        self._arguments_scheme[name] = \
-                            typespec.ArgumentSpec(record[name],
-                                                      self._namespace_resolver)
+            self._body = self._prepare_body(payload.get('Body') or [])
+            arguments_scheme = payload.get('Arguments') or []
+            if isinstance(arguments_scheme, types.DictionaryType):
+                arguments_scheme = [{key: value} for key, value in
+                                    arguments_scheme.iteritems()]
+            self._arguments_scheme = OrderedDict()
+            for record in arguments_scheme:
+                if not isinstance(record, types.DictionaryType) \
+                        or len(record) > 1:
+                        raise ValueError()
+                name = record.keys()[0]
+                self._arguments_scheme[name] = typespec.ArgumentSpec(
+                    record[name], self._namespace_resolver)
 
         self._murano_class = murano_class
 
@@ -57,7 +51,7 @@ class MuranoMethod(object):
 
     def _generate_arguments_scheme(self, func):
         func_info = inspect.getargspec(func)
-        data = [(name, {'Type': YaqlExpression('$')})
+        data = [(name, {'Contract': YaqlExpression('$')})
                 for name in func_info.args]
         if inspect.ismethod(func):
             data = data[1:]

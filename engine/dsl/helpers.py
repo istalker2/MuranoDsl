@@ -33,7 +33,7 @@ def evaluate(value, context):
     if isinstance(value, types.DictionaryType):
         result = {}
         for d_key, d_value in value.iteritems():
-            result[d_key] = evaluate(d_value, context)
+            result[evaluate(d_key, context)] = evaluate(d_value, context)
         return result
     elif isinstance(value, types.ListType):
         return [evaluate(t, context) for t in value]

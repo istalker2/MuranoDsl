@@ -1,6 +1,6 @@
 import itertools
 import types
-from yaql.context import ContextAware, EvalArg
+from yaql.context import ContextAware, EvalArg, Context
 from . import MuranoObject
 import exceptions
 import yaql.exceptions
@@ -62,8 +62,11 @@ def _new(context, name, *args):
 
     object_store = helpers.get_object_store(context)
     class_loader = helpers.get_class_loader(context)
+    new_context = Context(parent_context=context)
+    for key, value in parameters.iteritems():
+        new_context.set_data(value, key)
     return class_loader.get_class(name).new(
-        None, object_store, context, parameters=parameters)
+        None, object_store, new_context, parameters=parameters)
 
 
 @EvalArg('value', MuranoObject)
@@ -112,5 +115,5 @@ def register(context):
     context.register_function(_psuper2, 'psuper')
     context.register_function(_super, 'super')
     context.register_function(_require, 'require')
-    context.register_function(_get_container, 'getContainer')
+    context.register_function(_get_container, 'find')
 

@@ -12,6 +12,7 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 
 import eventlet
 from muranocommon.messaging import MqClient
@@ -79,7 +80,7 @@ class EngineService(service.Service):
                 reconnect_delay = min(reconnect_delay * 2, 60)
 
     def debug_print(self, msg):
-        print '>>', msg
+        print '>>', msg, '<<'
         #eventlet.sleep(2)
         #print '<<', msg
         return 14
@@ -103,39 +104,44 @@ class EngineService(service.Service):
         object_class.add_method('debugPrint', self.debug_print)
         object_class.add_method('debugPrint2', self.debug_print2)
 
-        obj = executor.load({
-            '?': {
-                'id': '123',
-                'type': 'com.mirantis.murano.examples.Test'
-            },
-            'p1': 88,
-            'pt': {
-                '?': {
-                    'type': 'com.mirantis.murano.examples.Test2',
-                    'id': '456'
-                },
-                'p': 777,
-                'pt2': {
-                    '?': {
-                        'type': 'com.mirantis.murano.examples.Test3',
-                        'id': 'xxx_test3'
-                    }
-                }
-            }
-        })
-
-        executor.load_shadow({
-            '?': {
-                'id': '123',
-                'type': 'com.mirantis.murano.examples.Test'
-            },
-            'p1': 99,
-            #'pt': '345'
-        })
+        # obj = executor.load({
+        #     '?': {
+        #         'id': '123',
+        #         'type': 'com.mirantis.murano.examples.Test'
+        #     },
+        #     'p1': 88,
+        #     'pt': {
+        #         '?': {
+        #             'type': 'com.mirantis.murano.examples.Test2',
+        #             'id': '456'
+        #         },
+        #         'p': 777,
+        #         'pt2': {
+        #             '?': {
+        #                 'type': 'com.mirantis.murano.examples.Test3',
+        #                 'id': 'xxx_test3'
+        #             }
+        #         }
+        #     }
+        # })
+        #
+        # executor.load_shadow({
+        #     '?': {
+        #         'id': '123',
+        #         'type': 'com.mirantis.murano.examples.Test'
+        #     },
+        #     'p1': 99,
+        #     #'pt': '345'
+        # })
 
         # objects = object_store.load({
         #     '123': {'?': {'type': 'com.mirantis.murano.examples.Test'}},
         # })
+
+        with open('./ad.json') as ad:
+            data = ad.read()
+
+        obj = executor.load(json.loads(data))
 
 
         print obj
@@ -145,7 +151,7 @@ class EngineService(service.Service):
 
 
 #        print test_class.name
-        res = obj.type.invoke('method1', executor, obj, {'t': 17})
+        res = obj.type.invoke('deploy', executor, obj, {})
         print "=", res
         print
         print '---------------------------------------------------------'

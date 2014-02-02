@@ -81,7 +81,9 @@ class TypeScheme(object):
                 raise TypeError()
             if value is None:
                 return None
-            if isinstance(value, types.DictionaryType):
+            if isinstance(value, MuranoObject):
+                obj = value
+            elif isinstance(value, types.DictionaryType):
                 obj = object_store.load(value, this, root_context)
             elif isinstance(value, types.StringType):
                 obj = object_store.get(value)
@@ -93,8 +95,15 @@ class TypeScheme(object):
                 raise TypeError()
             return obj
 
+        @EvalArg('prefix', str)
+        @EvalArg('name', str)
+        def _validate(prefix, name):
+            return namespace_resolver.resolve_name(
+                '%s:%s' % (prefix, name))
+
 
         context = Context(parent_context=root_context)
+        context.register_function(_validate, '#validate')
         context.register_function(_int, 'int')
         context.register_function(_string, 'string')
         context.register_function(_bool, 'bool')
@@ -133,7 +142,10 @@ class TypeScheme(object):
 
     def _map_list(self, data, spec, context):
         if not isinstance(data, types.ListType):
-            data = [data]
+            if data is None:
+                data = []
+            else:
+                data = [data]
         if len(spec) < 1:
             return data
         result = []
@@ -180,4 +192,8 @@ class TypeScheme(object):
     def __call__(self, data, context, this, object_store, namespace_resolver):
         context = self.prepare_context(
             context, this, object_store, namespace_resolver)
-        return self._map(data, self._spec, context)
+        try:
+            return self._map(data, self._spec, context)
+        except Exception, e:
+            print self._spec
+            raise e

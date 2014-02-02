@@ -108,13 +108,14 @@ class MuranoDslExecutor(object):
             current_thread._murano_dsl_thread_marker = thread_marker
         if callable(body):
             if '_context' in inspect.getargspec(body).args:
-                params['_context'] = self._create_context(this, murano_class)
+                params['_context'] = self._create_context(
+                    this, murano_class, **params)
             if inspect.ismethod(body) and not body.__self__:
                 return body(this.cast(murano_class), **params)
             else:
                 return body(**params)
         elif isinstance(body, expressions.DslExpression):
-            return self.execute(body, murano_class, this, params)
+            return self.execute(body, murano_class, this, **params)
         else:
             raise ValueError()
 
@@ -152,7 +153,7 @@ class MuranoDslExecutor(object):
 
         return parameter_values
 
-    def _create_context(self, this, murano_class):
+    def _create_context(self, this, murano_class, **kwargs):
         new_context = self._class_loader.create_local_context(
             parent_context=self._root_context,
             murano_class=murano_class)
@@ -175,12 +176,12 @@ class MuranoDslExecutor(object):
 
         new_context.register_function(obj_attribution, '#operator_.')
         new_context.register_function(validate, '#validate')
+        for key, value in kwargs.iteritems():
+            new_context.set_data(value, key)
         return new_context
 
-    def execute(self, expression, murano_class, this, parameters={}):
-        new_context = self._create_context(this, murano_class)
-        for key, value in parameters.iteritems():
-            new_context.set_data(value, key)
+    def execute(self, expression, murano_class, this, **kwargs):
+        new_context = self._create_context(this, murano_class, **kwargs)
         return expression.execute(new_context, murano_class)
 
     def load(self, data):

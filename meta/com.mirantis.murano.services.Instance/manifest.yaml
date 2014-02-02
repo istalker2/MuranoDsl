@@ -1,27 +1,30 @@
 Namespaces:
-    =: com.mirantis.murano.services
-    std: com.mirantis.murano
-    sys: com.mirantis.murano.system
+  =: com.mirantis.murano.services
+  std: com.mirantis.murano
+  sys: com.mirantis.murano.system
 
 Name: Instance
 
 Properties:
   name:
-    Type: String
-    Mandatory: true
+    Contract: $.string().notNull()
   flavor:
-    Type: String
-    Mandatory: true
+    Contract: $.string().notNull()
   image:
-    Type: String
-    Mandatory: true
+    Contract: $.string().notNull()
+
+  agent:
+    Contract: $.class(sys:Agent)
 
 Workflow:
-  deploy:
-    Arguments:
-      - environment:
-          Type: std:Environment
+  initialize:
     Body:
+      - $.environment: $.find(std:Environment).require()
+      - $.agent: new(sys:Agent, host => $)
+
+  deploy:
+    Body:
+      - $resources: new(sys:Resources)
       - $template:
           Resources:
             $.name:
@@ -29,8 +32,8 @@ Workflow:
               Properties:
                 InstanceType: $.flavor
                 ImageId: $.image
-      - $.heat.updateStack(template => $template,
-          environment => $.environment)
+      - $.environment.stack.updateTemplate($template)
+      - $.environment.stack.push()
 
 
 

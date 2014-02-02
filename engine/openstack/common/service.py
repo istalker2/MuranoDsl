@@ -1,3 +1,5 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # Copyright 2011 Justin Santa Barbara
@@ -18,7 +20,6 @@
 """Generic Node base class for all workers that run on hosts."""
 
 import errno
-import logging as std_logging
 import os
 import random
 import signal
@@ -27,6 +28,7 @@ import time
 
 import eventlet
 from eventlet import event
+import logging as std_logging
 from oslo.config import cfg
 
 from engine.openstack.common import eventlet_backdoor
@@ -36,32 +38,9 @@ from engine.openstack.common import log as logging
 from engine.openstack.common import threadgroup
 
 
-rpc = importutils.try_import('engine.openstack.common.rpc')
+rpc = importutils.try_import('conductor.openstack.common.rpc')
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
-
-
-def _sighup_supported():
-    return hasattr(signal, 'SIGHUP')
-
-
-def _is_sighup(signo):
-    return _sighup_supported() and signo == signal.SIGHUP
-
-
-def _signo_to_signame(signo):
-    signals = {signal.SIGTERM: 'SIGTERM',
-               signal.SIGINT: 'SIGINT'}
-    if _sighup_supported():
-        signals[signal.SIGHUP] = 'SIGHUP'
-    return signals[signo]
-
-
-def _set_signals_handler(handler):
-    signal.signal(signal.SIGTERM, handler)
-    signal.signal(signal.SIGINT, handler)
-    if _sighup_supported():
-        signal.signal(signal.SIGHUP, handler)
 
 
 class Launcher(object):
@@ -102,15 +81,6 @@ class Launcher(object):
         """
         self.services.wait()
 
-    def restart(self):
-        """Reload config files and restart service.
-
-        :returns: None
-
-        """
-        cfg.CONF.reload_config_files()
-        self.services.restart()
-
 
 class SignalExit(SystemExit):
     def __init__(self, signo, exccode=1):
@@ -121,28 +91,26 @@ class SignalExit(SystemExit):
 class ServiceLauncher(Launcher):
     def _handle_signal(self, signo, frame):
         # Allow the process to be killed again and die from natural causes
-        _set_signals_handler(signal.SIG_DFL)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+
         raise SignalExit(signo)
 
-    def handle_signal(self):
-        _set_signals_handler(self._handle_signal)
-
-    def _wait_for_exit_or_signal(self, ready_callback=None):
-        status = None
-        signo = 0
+    def wait(self):
+        signal.signal(signal.SIGTERM, self._handle_signal)
+        signal.signal(signal.SIGINT, self._handle_signal)
 
         LOG.debug(_('Full set of CONF:'))
         CONF.log_opt_values(LOG, std_logging.DEBUG)
 
+        status = None
         try:
-            if ready_callback:
-                ready_callback()
             super(ServiceLauncher, self).wait()
         except SignalExit as exc:
-            signame = _signo_to_signame(exc.signo)
+            signame = {signal.SIGTERM: 'SIGTERM',
+                       signal.SIGINT: 'SIGINT'}[exc.signo]
             LOG.info(_('Caught %s, exiting'), signame)
             status = exc.code
-            signo = exc.signo
         except SystemExit as exc:
             status = exc.code
         finally:
@@ -153,16 +121,7 @@ class ServiceLauncher(Launcher):
                 except Exception:
                     # We're shutting down, so it doesn't matter at this point.
                     LOG.exception(_('Exception during rpc cleanup.'))
-
-        return status, signo
-
-    def wait(self, ready_callback=None):
-        while True:
-            self.handle_signal()
-            status, signo = self._wait_for_exit_or_signal(ready_callback)
-            if not _is_sighup(signo):
-                return status
-            self.restart()
+        return status
 
 
 class ServiceWrapper(object):
@@ -180,17 +139,17 @@ class ProcessLauncher(object):
         self.running = True
         rfd, self.writepipe = os.pipe()
         self.readpipe = eventlet.greenio.GreenPipe(rfd, 'r')
-        self.handle_signal()
 
-    def handle_signal(self):
-        _set_signals_handler(self._handle_signal)
+        signal.signal(signal.SIGTERM, self._handle_signal)
+        signal.signal(signal.SIGINT, self._handle_signal)
 
     def _handle_signal(self, signo, frame):
         self.sigcaught = signo
         self.running = False
 
         # Allow the process to be killed again and die from natural causes
-        _set_signals_handler(signal.SIG_DFL)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     def _pipe_watcher(self):
         # This will block until the write end is closed when the parent
@@ -201,48 +160,15 @@ class ProcessLauncher(object):
 
         sys.exit(1)
 
-    def _child_process_handle_signal(self):
+    def _child_process(self, service):
         # Setup child signal handlers differently
         def _sigterm(*args):
             signal.signal(signal.SIGTERM, signal.SIG_DFL)
             raise SignalExit(signal.SIGTERM)
 
-        def _sighup(*args):
-            signal.signal(signal.SIGHUP, signal.SIG_DFL)
-            raise SignalExit(signal.SIGHUP)
-
         signal.signal(signal.SIGTERM, _sigterm)
-        if _sighup_supported():
-            signal.signal(signal.SIGHUP, _sighup)
         # Block SIGINT and let the parent send us a SIGTERM
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    def _child_wait_for_exit_or_signal(self, launcher):
-        status = 0
-        signo = 0
-
-        # NOTE(johannes): All exceptions are caught to ensure this
-        # doesn't fallback into the loop spawning children. It would
-        # be bad for a child to spawn more children.
-        try:
-            launcher.wait()
-        except SignalExit as exc:
-            signame = _signo_to_signame(exc.signo)
-            LOG.info(_('Caught %s, exiting'), signame)
-            status = exc.code
-            signo = exc.signo
-        except SystemExit as exc:
-            status = exc.code
-        except BaseException:
-            LOG.exception(_('Unhandled exception'))
-            status = 2
-        finally:
-            launcher.stop()
-
-        return status, signo
-
-    def _child_process(self, service):
-        self._child_process_handle_signal()
 
         # Reopen the eventlet hub to make sure we don't share an epoll
         # fd with parent and/or siblings, which would be bad
@@ -258,7 +184,7 @@ class ProcessLauncher(object):
 
         launcher = Launcher()
         launcher.launch_service(service)
-        return launcher
+        launcher.wait()
 
     def _start_child(self, wrap):
         if len(wrap.forktimes) > wrap.workers:
@@ -276,13 +202,24 @@ class ProcessLauncher(object):
 
         pid = os.fork()
         if pid == 0:
-            launcher = self._child_process(wrap.service)
-            while True:
-                self._child_process_handle_signal()
-                status, signo = self._child_wait_for_exit_or_signal(launcher)
-                if not _is_sighup(signo):
-                    break
-                launcher.restart()
+            # NOTE(johannes): All exceptions are caught to ensure this
+            # doesn't fallback into the loop spawning children. It would
+            # be bad for a child to spawn more children.
+            status = 0
+            try:
+                self._child_process(wrap.service)
+            except SignalExit as exc:
+                signame = {signal.SIGTERM: 'SIGTERM',
+                           signal.SIGINT: 'SIGINT'}[exc.signo]
+                LOG.info(_('Caught %s, exiting'), signame)
+                status = exc.code
+            except SystemExit as exc:
+                status = exc.code
+            except BaseException:
+                LOG.exception(_('Unhandled exception'))
+                status = 2
+            finally:
+                wrap.service.stop()
 
             os._exit(status)
 
@@ -328,7 +265,12 @@ class ProcessLauncher(object):
         wrap.children.remove(pid)
         return wrap
 
-    def _respawn_children(self):
+    def wait(self):
+        """Loop waiting on children to die and respawning as necessary."""
+
+        LOG.debug(_('Full set of CONF:'))
+        CONF.log_opt_values(LOG, std_logging.DEBUG)
+
         while self.running:
             wrap = self._wait_child()
             if not wrap:
@@ -337,28 +279,14 @@ class ProcessLauncher(object):
                 # (see bug #1095346)
                 eventlet.greenthread.sleep(.01)
                 continue
+
             while self.running and len(wrap.children) < wrap.workers:
                 self._start_child(wrap)
 
-    def wait(self):
-        """Loop waiting on children to die and respawning as necessary."""
-
-        LOG.debug(_('Full set of CONF:'))
-        CONF.log_opt_values(LOG, std_logging.DEBUG)
-
-        while True:
-            self.handle_signal()
-            self._respawn_children()
-            if self.sigcaught:
-                signame = _signo_to_signame(self.sigcaught)
-                LOG.info(_('Caught %s, stopping children'), signame)
-            if not _is_sighup(self.sigcaught):
-                break
-
-            for pid in self.children:
-                os.kill(pid, signal.SIGHUP)
-            self.running = True
-            self.sigcaught = None
+        if self.sigcaught:
+            signame = {signal.SIGTERM: 'SIGTERM',
+                       signal.SIGINT: 'SIGINT'}[self.sigcaught]
+            LOG.info(_('Caught %s, stopping children'), signame)
 
         for pid in self.children:
             try:
@@ -381,10 +309,6 @@ class Service(object):
         self.tg = threadgroup.ThreadGroup(threads)
 
         # signal that the service is done shutting itself down:
-        self._done = event.Event()
-
-    def reset(self):
-        # NOTE(Fengqian): docs for Event.reset() recommend against using it
         self._done = event.Event()
 
     def start(self):
@@ -428,13 +352,6 @@ class Services(object):
 
     def wait(self):
         self.tg.wait()
-
-    def restart(self):
-        self.stop()
-        self.done = event.Event()
-        for restart_service in self.services:
-            restart_service.reset()
-            self.tg.add_thread(self.run_service, restart_service, self.done)
 
     @staticmethod
     def run_service(service, done):

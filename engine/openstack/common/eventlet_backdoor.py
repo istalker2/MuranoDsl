@@ -1,3 +1,5 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
 # Copyright (c) 2012 OpenStack Foundation.
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
@@ -102,8 +104,7 @@ def _listen(host, start_port, end_port, listen_func):
         try:
             return listen_func((host, try_port))
         except socket.error as exc:
-            if (exc.errno != errno.EADDRINUSE or
-               try_port >= end_port):
+            if (exc.errno != errno.EADDRINUSE or try_port >= end_port):
                 raise
             try_port += 1
 

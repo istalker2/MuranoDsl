@@ -9,26 +9,28 @@ Name: PrimaryController
 Inherits: Controller
 
 Properties:
-  recoveryPassword:
-    Type: String
+
+  dnsIp:
+    Contract: $.string()
 
 Workflow:
-  std:Deploy:
-    Access: Public
-    Arguments:
-      - environment:
-          Type: std:Environment
-      - domain:
-          Type: ActiveDirectory
+  initialize:
     Body:
-      - std:Deploy super():
-          environment: $environment
+      - $.super($.initialize())
+      - $.domain: $.find(ActiveDirectory).require()
 
-      - $template: $.resources.json('CreatePrimaryDC.template')
-      - $ep:
-          $template.with(domain => $domain.name).
-            with(recoveryPassword => $.recoveryPassword)
+  deploy:
+    Arguments:
+    Body:
+      - $.debugPrint('Deploying Primary Controller for domain {0}'.format($this.domain.name))
+      - $.super($.deploy())
+      - $resources: new(sys:Resources)
+      - $template: $resources.json('CreatePrimaryDC.template').bind(dict(
+            domain => $.domain.name,
+            recoveryPassword => $.recoveryPassword
+          ))
+      - $.host.agent.call($template, $resources)
 
-      - SendCommand $.host:
-          executionPlan: $ep
+      - $template: $resources.json('AskDnsIp.template')
+      - $.dnsIp: $.host.agent.call($template, $resources)[0]
 
