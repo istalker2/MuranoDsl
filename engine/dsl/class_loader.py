@@ -6,12 +6,12 @@ import exceptions
 from namespace_resolver import NamespaceResolver
 from murano_class import MuranoClass, MuranoObject
 import typespec
-import principle_objects
+import principal_objects
 
 class MuranoClassLoader(object):
     def __init__(self):
         self._loaded_types = {}
-        principle_objects.register(self)
+        principal_objects.register(self)
 
     def get_class(self, name, create_missing=False):
         if name in self._loaded_types:
