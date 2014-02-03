@@ -15,6 +15,3 @@ class SysObject(MuranoObject):
         object_store = helpers.get_shadow_object_store(_context)
         object_store.put(copy.deepcopy(helpers.get_this(_context)))
 
-    def sleep(self, seconds):
-        eventlet.sleep(seconds)
-

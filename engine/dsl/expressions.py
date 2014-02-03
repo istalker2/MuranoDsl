@@ -49,29 +49,29 @@ class Statement(DslExpression):
 
 
 def parse_expression(expr):
+    result = None
     if isinstance(expr, YaqlExpression):
-        return Statement(expr)
+        result = Statement(expr)
     elif isinstance(expr, types.DictionaryType):
         kwds = {}
         for key, value in expr.iteritems():
-            key = str(key).strip()
-            if not key:
-                raise SyntaxError()
-            if key.startswith('$'):
-                return Statement(expr)
-            parts = key.split(' ', 1)
-            kwds[parts[0]] = \
-                (None if len(parts) == 1 else parts[1]), value
+            if isinstance(key, YaqlExpression):
+                if result is not None:
+                    raise ValueError()
+                result = Statement(expr)
+            else:
+                kwds[key] = value
 
-        for cls in _macros:
-            try:
-                return cls(**kwds)
-            except TypeError:
-                continue
+        if result is None:
+            for cls in _macros:
+                try:
+                    return cls(**kwds)
+                except TypeError:
+                    continue
 
-        return Statement(expr)
-
-    raise SyntaxError()
+    if result is None:
+        raise SyntaxError()
+    return result
 
 
 

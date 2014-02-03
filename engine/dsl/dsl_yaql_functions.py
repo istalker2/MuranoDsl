@@ -1,5 +1,6 @@
 import itertools
 import types
+import eventlet
 from yaql.context import ContextAware, EvalArg, Context
 from . import MuranoObject
 import exceptions
@@ -105,6 +106,10 @@ def _get_container(context, obj, class_name):
         p = p.parent
     return None
 
+@EvalArg('seconds', (int, float))
+def _sleep(seconds):
+    eventlet.sleep(seconds)
+
 
 def register(context):
     context.register_function(_resolve, '#resolve')
@@ -116,4 +121,5 @@ def register(context):
     context.register_function(_super, 'super')
     context.register_function(_require, 'require')
     context.register_function(_get_container, 'find')
+    context.register_function(_sleep, 'sleep')
 

@@ -104,44 +104,44 @@ class EngineService(service.Service):
         object_class.add_method('debugPrint', self.debug_print)
         object_class.add_method('debugPrint2', self.debug_print2)
 
-        # obj = executor.load({
-        #     '?': {
-        #         'id': '123',
-        #         'type': 'com.mirantis.murano.examples.Test'
-        #     },
-        #     'p1': 88,
-        #     'pt': {
-        #         '?': {
-        #             'type': 'com.mirantis.murano.examples.Test2',
-        #             'id': '456'
-        #         },
-        #         'p': 777,
-        #         'pt2': {
-        #             '?': {
-        #                 'type': 'com.mirantis.murano.examples.Test3',
-        #                 'id': 'xxx_test3'
-        #             }
-        #         }
-        #     }
-        # })
-        #
-        # executor.load_shadow({
-        #     '?': {
-        #         'id': '123',
-        #         'type': 'com.mirantis.murano.examples.Test'
-        #     },
-        #     'p1': 99,
-        #     #'pt': '345'
-        # })
+        obj = executor.load({
+            '?': {
+                'id': '123',
+                'type': 'com.mirantis.murano.examples.Test'
+            },
+            'p1': 88,
+            'pt': {
+                '?': {
+                    'type': 'com.mirantis.murano.examples.Test2',
+                    'id': '456'
+                },
+                'p': 777,
+                'pt2': {
+                    '?': {
+                        'type': 'com.mirantis.murano.examples.Test3',
+                        'id': 'xxx_test3'
+                    }
+                }
+            }
+        })
+
+        executor.load_shadow({
+            '?': {
+                'id': '123',
+                'type': 'com.mirantis.murano.examples.Test'
+            },
+            'p1': 99,
+            #'pt': '345'
+        })
 
         # objects = object_store.load({
         #     '123': {'?': {'type': 'com.mirantis.murano.examples.Test'}},
         # })
 
-        with open('./ad.json') as ad:
-            data = ad.read()
-
-        obj = executor.load(json.loads(data))
+        # with open('./ad.json') as ad:
+        #     data = ad.read()
+        #
+        # obj = executor.load(json.loads(data))
 
 
         print obj

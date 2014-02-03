@@ -24,12 +24,10 @@ Workflow:
       - $this.agentListener: new(sys:AgentListener, name => $.name)
       - $this.stack: new(sys:HeatStack, name => $.name)
 
-
   deploy:
     Body:
       - $.agentListener.start()
       - $.applications.pselect($.deploy())
-      - $.sleep(1)
       - $.agentListener.stop()
 
 
