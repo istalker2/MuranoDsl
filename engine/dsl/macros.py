@@ -110,26 +110,6 @@ class WhileDoMacro(expressions.DslExpression):
                 break
 
 
-class DoUntilMacro(expressions.DslExpression):
-    def __init__(self, Do, Until):
-        if not isinstance(Until, YaqlExpression):
-            raise TypeError()
-        self._code = CodeBlock(Do, breakable=True)
-        self._condition = Until
-
-    def execute(self, context, murano_class):
-        while True:
-            try:
-                self._code.execute(context, murano_class)
-            except exceptions.BreakException:
-                break
-
-            res = self._condition.evaluate(context)
-            if not isinstance(res, types.BooleanType):
-                raise TypeError()
-            if res:
-                break
-
 
 class ForMacro(expressions.DslExpression):
     def __init__(self, For, In, Do):
@@ -208,18 +188,21 @@ class SwitchMacro(expressions.DslExpression):
             self._default.execute(context, murano_class)
 
 
-def do_macro(Do):
-    return CodeBlock(Do)
+class DoMacro(expressions.DslExpression):
+    def __init__(self, Do):
+        self._code = CodeBlock(Do)
+
+    def execute(self, context, murano_class):
+        child_context = Context(context)
+        self._code.execute(child_context, murano_class)
 
 
-
-expressions.register_macro(do_macro)
+expressions.register_macro(DoMacro)
 expressions.register_macro(ReturnMacro)
 expressions.register_macro(BreakMacro)
 expressions.register_macro(ParallelMacro)
 expressions.register_macro(IfMacro)
 expressions.register_macro(WhileDoMacro)
-expressions.register_macro(DoUntilMacro)
 expressions.register_macro(ForMacro)
 expressions.register_macro(RepeatMacro)
 expressions.register_macro(MatchMacro)
