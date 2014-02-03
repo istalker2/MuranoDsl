@@ -138,10 +138,10 @@ class EngineService(service.Service):
         #     '123': {'?': {'type': 'com.mirantis.murano.examples.Test'}},
         # })
 
-        # with open('./ad.json') as ad:
-        #     data = ad.read()
-        #
-        # obj = executor.load(json.loads(data))
+        with open('./ad.json') as ad:
+            data = ad.read()
+
+        obj = executor.load(json.loads(data))
 
 
         print obj

@@ -21,10 +21,11 @@ Workflow:
     Body:
       - $.environment: $.find(std:Environment).require()
       - $.agent: new(sys:Agent, host => $)
+      - $.resources: new(sys:Resources)
 
   deploy:
     Body:
-      - $resources: new(sys:Resources)
+      - $userData: $.prepareUserData()
       - $template:
           Resources:
             $.name:
@@ -32,8 +33,35 @@ Workflow:
               Properties:
                 InstanceType: $.flavor
                 ImageId: $.image
+                UserData: $userData
       - $.environment.stack.updateTemplate($template)
       - $.environment.stack.push()
+
+
+  prepareUserData:
+    Body:
+      - $configFile: $.resources.string('Agent-v1.template')
+      - $initScript: $.resources.string('init.ps1')
+
+      - $configReplacements:
+          "%RABBITMQ_HOST%": config(rabbitmq, host)
+          "%RABBITMQ_PORT%": config(rabbitmq, port)
+          "%RABBITMQ_USER%": config(rabbitmq, login)
+          "%RABBITMQ_PASSWORD%": config(rabbitmq, password)
+          "%RABBITMQ_VHOST%": config(rabbitmq, virtual_host)
+          "%RABBITMQ_SSL%": str(config(rabbitmq, ssl)).lower()
+          "%RABBITMQ_INPUT_QUEUE%": $.agent.queueName(),
+          "%RESULT_QUEUE%": $.environment.agentListener.queueName()
+
+      - $scriptReplacements:
+          "%AGENT_CONFIG_BASE64%": base64encode($configFile.replace($configReplacements))
+          "%INTERNAL_HOSTNAME%": $.name
+          "%MURANO_SERVER_ADDRESS%": coalesce(config(file_server), config(rabbitmq, host))
+          "%CA_ROOT_CERT_BASE64%": ""
+
+      - Return: $initScript.replace($scriptReplacements)
+
+
 
 
 

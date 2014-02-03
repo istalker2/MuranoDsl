@@ -23,6 +23,8 @@ class Agent(MuranoObject):
             environment.object_id, host.object_id)).lower()
         self._environment = environment
 
+    def queueName(self):
+        return self._queue
 
     def _send(self, template, wait_results):
 

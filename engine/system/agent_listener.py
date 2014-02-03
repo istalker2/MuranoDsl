@@ -9,6 +9,9 @@ class AgentListener(MuranoObject):
         self._subscriptions = {}
         self._receive_thread = None
 
+    def queueName(self):
+        return self._results_queue
+
     def start(self):
         if self._receive_thread is None:
             self._receive_thread = eventlet.spawn(self._receive)

@@ -63,12 +63,13 @@ def _replace_str(src, substring, value):
 @EvalArg('replacements', dict)
 def _replace_dict(src, replacements):
     for key, value in replacements.iteritems():
-        src = src.replace(key, value)
+        src = src.replace(key, str(value))
     return src
 
 
 def _len(value):
     return len(value())
+
 
 def _coalesce(*args):
     for t in args:
@@ -93,6 +94,11 @@ def _config(group, setting):
     return cfg.CONF[group][setting]
 
 
+@EvalArg('setting', str)
+def _config_default(setting):
+    return cfg.CONF[setting]
+
+
 @EvalArg('value', str)
 def _upper(value):
     return value.upper()
@@ -114,6 +120,50 @@ def _split(value, separator):
     return value.split(separator)
 
 
+@EvalArg('value', str)
+@EvalArg('prefix', str)
+def _startswith(value, prefix):
+    return value.startswith(prefix)
+
+
+@EvalArg('value', str)
+@EvalArg('suffix', str)
+def _endswith(value, suffix):
+    return value.endswith(suffix)
+
+
+@EvalArg('value', str)
+def _trim(value):
+    return value.strip()
+
+
+@EvalArg('value', str)
+@EvalArg('pattern', str)
+def _mathces(value, pattern):
+    return re.match(pattern, value) is not None
+
+
+@EvalArg('value', str)
+@EvalArg('index', int)
+@EvalArg('length', int)
+def _substr(value, index=0, length=-1):
+    if length < 0:
+        return value[index:]
+    else:
+        return value[index:index+length]
+
+def _str(value):
+    value = value()
+    if value is None:
+        return None
+    return str(value)
+
+
+def _int(value):
+    value = value()
+    return int(value)
+
+
 def _pselect(collection, composer):
     return helpers.parallel_select(collection(), composer)
 
@@ -130,9 +180,16 @@ def register(context):
     context.register_function(_base64decode, 'base64decode')
     context.register_function(_base64encode, 'base64encode')
     context.register_function(_config, 'config')
+    context.register_function(_config_default, 'config')
     context.register_function(_lower, 'lower')
     context.register_function(_upper, 'upper')
     context.register_function(_join, 'join')
     context.register_function(_split, 'split')
     context.register_function(_pselect, 'pselect')
-
+    context.register_function(_startswith, 'startsWith')
+    context.register_function(_endswith, 'endsWith')
+    context.register_function(_trim, 'trim')
+    context.register_function(_mathces, 'matches')
+    context.register_function(_substr, 'substr')
+    context.register_function(_str, 'str')
+    context.register_function(_int, 'int')
