@@ -122,6 +122,20 @@ class EngineService(service.Service):
                         'id': 'xxx_test3'
                     }
                 }
+            },
+            'ptx': {
+                '?': {
+                    'type': 'com.mirantis.murano.examples.Test2',
+                    'id': '4561'
+                },
+                'p': 7771,
+                'pt2': {
+                    '?': {
+                        'type': 'com.mirantis.murano.examples.Test3',
+                        'id': 'xxx_test31'
+                    },
+                    #'p3': 888
+                }
             }
         })
 
@@ -138,10 +152,10 @@ class EngineService(service.Service):
         #     '123': {'?': {'type': 'com.mirantis.murano.examples.Test'}},
         # })
 
-        with open('./ad.json') as ad:
-            data = ad.read()
-
-        obj = executor.load(json.loads(data))
+        # with open('./ad.json') as ad:
+        #     data = ad.read()
+        #
+        # obj = executor.load(json.loads(data))
 
 
         print obj

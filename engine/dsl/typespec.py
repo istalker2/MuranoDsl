@@ -9,9 +9,11 @@ class Spec(object):
         self._default = declaration.get('Default')
         self._has_default = 'Default' in declaration
 
-    def validate(self, value, this, context,  object_store):
+    def validate(self, value, this, context,  object_store, default=None):
+        if default is None:
+            default = self.default
         return self._type_scheme(value, context, this, object_store,
-                                 self._namespace_resolver)
+                                 self._namespace_resolver, default)
 
     @property
     def default(self):

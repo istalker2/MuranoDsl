@@ -23,7 +23,7 @@ class ObjectStore(object):
     def put(self, murano_object):
         self._store[murano_object.object_id] = murano_object
 
-    def load(self, value, parent, context):
+    def load(self, value, parent, context, defaults=None):
         tmp_store = ObjectStore(self._class_loader, self)
 
         if '?' not in value or 'type' not in value['?']:
@@ -36,7 +36,8 @@ class ObjectStore(object):
         if not class_obj:
             raise ValueError()
         obj = class_obj.new(parent, tmp_store, context=context,
-                            object_id=object_id, frozen=self._frozen)
+                            object_id=object_id, frozen=self._frozen,
+                            defaults=defaults)
         tmp_store._store[object_id] = obj
         obj.initialize(**value)
 

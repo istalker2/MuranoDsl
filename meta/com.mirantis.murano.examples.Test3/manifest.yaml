@@ -3,6 +3,12 @@ Namespaces:
     std: com.mirantis.murano
 Name: Test3
 
+Properties:
+  p3:
+    Contract: $.int()
+    Default: 987
+
+
 Workflow:
   method1:
       Body:

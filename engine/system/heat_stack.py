@@ -14,50 +14,50 @@ class HeatStack(engine.dsl.MuranoObject):
         self._parameters = {}
         self._applied = True
         environment = engine.dsl.helpers.get_environment(_context)
-        keystone_settings = engine.config.CONF.keystone
-        heat_settings = engine.config.CONF.heat
-
-        client = ksclient.Client(
-            endpoint=keystone_settings.auth_url,
-            cacert=keystone_settings.ca_file or None,
-            cert=keystone_settings.cert_file or None,
-            key=keystone_settings.key_file or None,
-            insecure=keystone_settings.insecure)
-
-        if not client.authenticate(
-                auth_url=keystone_settings.auth_url,
-                tenant_id=environment.tenant_id,
-                token=environment.token):
-            raise heatclient.exc.HTTPUnauthorized()
-
-        heat_url = client.service_catalog.url_for(
-            service_type='orchestration',
-            endpoint_type=heat_settings.endpoint_type)
-
-        self._heat_client = Client(
-            '1',
-            heat_url,
-            username='badusername',
-            password='badpassword',
-            token_only=True,
-            token=client.auth_token,
-            ca_file=heat_settings.ca_file or None,
-            cert_file=heat_settings.cert_file or None,
-            key_file=heat_settings.key_file or None,
-            insecure=heat_settings.insecure)
+        # keystone_settings = engine.config.CONF.keystone
+        # heat_settings = engine.config.CONF.heat
+        #
+        # client = ksclient.Client(
+        #     endpoint=keystone_settings.auth_url,
+        #     cacert=keystone_settings.ca_file or None,
+        #     cert=keystone_settings.cert_file or None,
+        #     key=keystone_settings.key_file or None,
+        #     insecure=keystone_settings.insecure)
+        #
+        # if not client.authenticate(
+        #         auth_url=keystone_settings.auth_url,
+        #         tenant_id=environment.tenant_id,
+        #         token=environment.token):
+        #     raise heatclient.exc.HTTPUnauthorized()
+        #
+        # heat_url = client.service_catalog.url_for(
+        #     service_type='orchestration',
+        #     endpoint_type=heat_settings.endpoint_type)
+        #
+        # self._heat_client = Client(
+        #     '1',
+        #     heat_url,
+        #     username='badusername',
+        #     password='badpassword',
+        #     token_only=True,
+        #     token=client.auth_token,
+        #     ca_file=heat_settings.ca_file or None,
+        #     cert_file=heat_settings.cert_file or None,
+        #     key_file=heat_settings.key_file or None,
+        #     insecure=heat_settings.insecure)
 
     def current(self):
         if self._template is not None:
             return self._template
         try:
-            stack_info = self._heat_client.stacks.get(stack_id=self._name)
-            template = self._heat_client.stacks.template(
-                stack_id='{0}/{1}'.format(
-                    stack_info.stack_name,
-                    stack_info.id))
-            # template = {}
+            # stack_info = self._heat_client.stacks.get(stack_id=self._name)
+            # template = self._heat_client.stacks.template(
+            #     stack_id='{0}/{1}'.format(
+            #         stack_info.stack_name,
+            #         stack_info.id))
+            template = {}
             self._template = template
-            self._parameters.update(stack_info.parameters)
+            # self._parameters.update(stack_info.parameters)
             self._applied = True
             return self._template.copy()
         except heatclient.exc.HTTPNotFound:
@@ -89,9 +89,6 @@ class HeatStack(engine.dsl.MuranoObject):
     def _get_status(self):
         status = [None]
 
-        def status_func(state_value):
-            status[0] = state_value
-            return True
 
         self._wait_state(status_func)
         return status[0]
@@ -139,9 +136,9 @@ class HeatStack(engine.dsl.MuranoObject):
         if self._applied or self._template is None:
             return
 
-        # print 'Pushing', self._template
-        # self._applied = True
-        # return {}
+        print 'Pushing', self._template
+        self._applied = True
+        return {}
 
         current_status = self._get_status()
         if current_status == 'NOT_FOUND':

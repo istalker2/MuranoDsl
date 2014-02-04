@@ -1,9 +1,12 @@
 import types
 import sys
+import uuid
 import helpers
 from murano_object import MuranoObject
 from yaql_expression import YaqlExpression
 from yaql.context import Context, EvalArg
+
+NoValue = object()
 
 
 class TypeScheme(object):
@@ -11,18 +14,22 @@ class TypeScheme(object):
         self._spec = spec
 
     def prepare_context(self, root_context, this, object_store,
-                        namespace_resolver):
+                        namespace_resolver, default):
         def _int(value):
             value = value()
+            if value is NoValue:
+                value = default
             if value is None:
                 return None
             try:
                 return int(value)
             except Exception:
-                raise TypeError('test')
+                raise TypeError()
 
         def _string(value):
             value = value()
+            if value is NoValue:
+                value = default
             if value is None:
                 return None
             try:
@@ -32,6 +39,8 @@ class TypeScheme(object):
 
         def _bool(value):
             value = value()
+            if value is NoValue:
+                value = default
             if value is None:
                 return None
             return True if value else False
@@ -73,8 +82,24 @@ class TypeScheme(object):
 
         @EvalArg('name', arg_type=str)
         def _class(value, name):
-            value = value()
+            return _class2(value, name, None)
+
+        @EvalArg('name', arg_type=str)
+        @EvalArg('default_name', arg_type=(str, types.NoneType))
+        def _class2(value, name, default_name):
             name = namespace_resolver.resolve_name(name)
+            if not default_name:
+                default_name = name
+            else:
+                default_name = namespace_resolver.resolve_name(default_name)
+            value = value()
+            if value is NoValue:
+                value = default
+                if isinstance(default, types.DictionaryType):
+                    value = {'?': {
+                        'id': uuid.uuid4().hex,
+                        'type': default_name
+                    }}
             class_loader = helpers.get_class_loader(root_context)
             murano_class = class_loader.get_class(name)
             if not murano_class:
@@ -84,7 +109,8 @@ class TypeScheme(object):
             if isinstance(value, MuranoObject):
                 obj = value
             elif isinstance(value, types.DictionaryType):
-                obj = object_store.load(value, this, root_context)
+                obj = object_store.load(value, this, root_context,
+                                        defaults=default)
             elif isinstance(value, types.StringType):
                 obj = object_store.get(value)
                 if obj is None:
@@ -111,6 +137,7 @@ class TypeScheme(object):
         context.register_function(_not_null, 'notNull')
         context.register_function(_error, 'error')
         context.register_function(_class, 'class')
+        context.register_function(_class2, 'class')
         context.register_function(_owned, 'owned')
         context.register_function(_not_owned, 'notOwned')
         return context
@@ -189,11 +216,11 @@ class TypeScheme(object):
                                types.NoneType)):
             return self._map_scalar(data, spec, child_context)
 
-    def __call__(self, data, context, this, object_store, namespace_resolver):
+    def __call__(self, data, context, this, object_store,
+                 namespace_resolver, default):
         context = self.prepare_context(
-            context, this, object_store, namespace_resolver)
-        try:
-            return self._map(data, self._spec, context)
-        except Exception, e:
-            print self._spec
-            raise e
+            context, this, object_store, namespace_resolver, default)
+        result = self._map(data, self._spec, context)
+        if result is NoValue:
+            raise TypeError('No type specified')
+        return result

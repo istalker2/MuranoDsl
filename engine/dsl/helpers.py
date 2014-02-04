@@ -3,6 +3,7 @@ import inspect
 import deep
 import re
 import types
+import sys
 import murano_object
 from yaql_expression import YaqlExpression
 import yaql.expressions
@@ -29,18 +30,24 @@ def serialize(value, memo=None):
         return value
 
 
-def evaluate(value, context):
-    if isinstance(value, types.DictionaryType):
+def evaluate(value, context, max_depth=sys.maxint):
+    if isinstance(value, (YaqlExpression, yaql.expressions.Expression)):
+        func = lambda: evaluate(value.evaluate(context), context, 1)
+        if max_depth <= 0:
+            return func
+        else:
+            return func()
+
+    elif isinstance(value, types.DictionaryType):
         result = {}
         for d_key, d_value in value.iteritems():
-            result[evaluate(d_key, context)] = evaluate(d_value, context)
+            result[evaluate(d_key, context, max_depth - 1)] = \
+                evaluate(d_value, context, max_depth - 1)
         return result
     elif isinstance(value, types.ListType):
-        return [evaluate(t, context) for t in value]
-    elif isinstance(value, (YaqlExpression, yaql.expressions.Expression)):
-        return evaluate(value.evaluate(context), context)
+        return [evaluate(t, context, max_depth - 1) for t in value]
     elif isinstance(value, types.TupleType):
-        return tuple(evaluate(list(value), context))
+        return tuple(evaluate(list(value), context, max_depth - 1))
     elif callable(value):
         return value()
     elif isinstance(value, types.StringTypes):
@@ -49,6 +56,22 @@ def evaluate(value, context):
         return list(value)
     else:
         return value
+
+
+def needs_evaluation(value):
+    if isinstance(value, (YaqlExpression, yaql.expressions.Expression)):
+        return True
+    elif isinstance(value, types.DictionaryType):
+        for d_key, d_value in value.iteritems():
+            if needs_evaluation(d_value) or needs_evaluation(d_key):
+                return True
+    elif isinstance(value, types.StringTypes):
+        return False
+    elif isinstance(value, collections.Iterable):
+        for t in value:
+            if needs_evaluation(t):
+                return True
+    return False
 
 
 def merge_lists(list1, list2):

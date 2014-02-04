@@ -9,49 +9,43 @@ Inherits:
   - TestParent2
 
 Properties:
+  ptx:
+    Contract: $.class(Test2).owned()
+    Default:
+      pt2:
+        p3: $.someProperty
+
   p1:
     Contract: $.int()
     Default: 99
-  QQ:
+
+  someProperty:
     Contract: $.int()
-    Default: 0
+    Default: 22
+
   pt:
     Contract: $.class(Test2).owned()
   pt2:
     Contract: $.class(Test2)
 
+
 Workflow:
   initialize:
     Body:
-#      - $this.super($.initialize())
+#     - $this.super($.initialize())
       - $.debugPrint('.ctor')
 
-  method1:
-      Arguments:
-        - t:
-            Contract: $.int()
-        - z:
-            Contract: $.int()
-            Default: 33
-      Body:
-         - $.pt.pt2.method1()
-         #- $.debugPrint($this.shadowed().p1)
-         #- $.shadow()
-         #- $.debugPrint($this.shadowed().p1)
-         #- $z: new(Test2, p => 15)
-         - Return: $.pt
-         #- $.p1: $.pt.method1(1, 44)
-#         - $heat: new(sys:Heat, $q).createStack(name2 => xxx, yyy)
-#         - $heat: new(sys:Heat).createStack(name2 => zzz, zzz)
-         - Return: $.p1
-#         - $b: $.pt.print()
-#         - $uu:
-#            x: 2 + 2 * 2
-#         - $z = $uu.x * 2 + 1
-#         - parent_method: $z
-#           debugPrint: $.pt.p2
+  deploy:
+#    Arguments:
+#        - t:
+#            Contract: $.int()
+#        - z:
+#            Contract: $.int()
+#            Default: 33
+    Body:
+      - Return: 2+2
 
-#        - $.parentProperty = debugPrint: $.pt.p2
-#        - $.QQ = $q1 * 2
-#        - std:method1 $.pt:
-#            t: 1111
+  vpmethod:
+    Body: $.debugPrint(child)
+
+
