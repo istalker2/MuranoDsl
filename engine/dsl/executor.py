@@ -1,30 +1,43 @@
 import functools
 import inspect
 import uuid
+import types
+
 import eventlet
 from eventlet.event import Event
-import types
+from yaql.context import EvalArg, Context
+
 import expressions
 import exceptions
-from yaql.context import EvalArg, Context
-from engine.dsl import helpers, MuranoObject, ObjectStore
+import helpers
+from attribute_store import AttributeStore
+from murano_object import MuranoObject
+from object_store import ObjectStore
 import dsl_yaql_functions
 
 
 class MuranoDslExecutor(object):
     def __init__(self, class_loader, environment=None):
         self._class_loader = class_loader
-        self._object_store = ObjectStore(class_loader, frozen=False)
-        self._shadow_object_store = ObjectStore(
-            class_loader, parent_store=self._object_store, frozen=True)
+        self._object_store = ObjectStore(class_loader)
+        self._attribute_store = AttributeStore()
         self._root_context = class_loader.create_root_context()
         self._root_context.set_data(self, '?executor')
         self._root_context.set_data(self._class_loader, '?classLoader')
         self._root_context.set_data(environment, '?environment')
-        self._root_context.set_data(self._object_store, '?objectStore+')
-        self._root_context.set_data(self._shadow_object_store, '?objectStore-')
+        self._root_context.set_data(self._object_store, '?objectStore')
+        self._root_context.set_data(self._attribute_store, '?attributeStore')
         self._locks = {}
         dsl_yaql_functions.register(self._root_context)
+        self._root_context = Context(self._root_context)
+
+    @property
+    def object_store(self):
+        return self._object_store
+
+    @property
+    def attribute_store(self):
+        return self._attribute_store
 
     def to_yaql_args(self, args):
         if not args:
@@ -58,7 +71,7 @@ class MuranoDslExecutor(object):
                         arguments_scheme, context, this, *args)
                 delegates.append(functools.partial(
                     self._invoke_method_implementation,
-                    method, this, params))
+                    method, this, declaring_class, context, params))
             except TypeError:
                 continue
         if len(delegates) < 1:
@@ -68,7 +81,8 @@ class MuranoDslExecutor(object):
         else:
             return delegates[0]()
 
-    def _invoke_method_implementation(self, method, this, params):
+    def _invoke_method_implementation(self, method, this, murano_class,
+                                      context, params):
         body = method.body
         if not body:
             return None
@@ -84,16 +98,16 @@ class MuranoDslExecutor(object):
         this_id = this.object_id
 
         event, marker = self._locks.get((method_id, this_id), (None, None))
-        if event:
-            if marker == thread_marker:
+        if True or event:
+            if True or marker == thread_marker:
                 return self._invoke_method_implementation_gt(
-                    body, this, params, method.murano_class)
-            event.wait()
+                    body, this, params, murano_class, context)
+            #event.wait()
 
         event = Event()
         self._locks[(method_id, this_id)] = (event, thread_marker)
         gt = eventlet.spawn(self._invoke_method_implementation_gt, body,
-                            this, params, method.murano_class,
+                            this, params, murano_class, context,
                             thread_marker)
         result = gt.wait()
         del self._locks[(method_id, this_id)]
@@ -101,7 +115,7 @@ class MuranoDslExecutor(object):
         return result
 
     def _invoke_method_implementation_gt(self, body, this,
-                                         params, murano_class,
+                                         params, murano_class, context,
                                          thread_marker=None):
         if thread_marker:
             current_thread = eventlet.greenthread.getcurrent()
@@ -109,13 +123,13 @@ class MuranoDslExecutor(object):
         if callable(body):
             if '_context' in inspect.getargspec(body).args:
                 params['_context'] = self._create_context(
-                    this, murano_class, **params)
+                    this, murano_class, context, **params)
             if inspect.ismethod(body) and not body.__self__:
-                return body(this.cast(murano_class), **params)
+                return body(this, **params)
             else:
                 return body(**params)
         elif isinstance(body, expressions.DslExpression):
-            return self.execute(body, murano_class, this, **params)
+            return self.execute(body, murano_class, this, context, **params)
         else:
             raise ValueError()
 
@@ -148,19 +162,20 @@ class MuranoDslExecutor(object):
                 if not arg_spec.has_default:
                     raise TypeError()
                 parameter_values[name] = arg_spec.validate(
-                    arg_spec.default, this, self._root_context,
-                    self._object_store)
+                    helpers.evaluate(arg_spec.default, context),
+                    this, self._root_context, self._object_store)
 
         return parameter_values
 
-    def _create_context(self, this, murano_class, **kwargs):
+    def _create_context(self, this, murano_class, context, **kwargs):
         new_context = self._class_loader.create_local_context(
             parent_context=self._root_context,
             murano_class=murano_class)
         new_context.set_data(this)
-        new_context.set_data(this, '$this')
-        new_context.set_data(this, '$?this')
+        new_context.set_data(this, 'this')
+        new_context.set_data(this, '?this')
         new_context.set_data(murano_class, '?type')
+        new_context.set_data(context, '?callerContext')
 
         @EvalArg('obj', arg_type=MuranoObject)
         @EvalArg('property_name', arg_type=str)
@@ -180,12 +195,10 @@ class MuranoDslExecutor(object):
             new_context.set_data(value, key)
         return new_context
 
-    def execute(self, expression, murano_class, this, **kwargs):
-        new_context = self._create_context(this, murano_class, **kwargs)
+    def execute(self, expression, murano_class, this, context, **kwargs):
+        new_context = self._create_context(
+            this, murano_class, context, **kwargs)
         return expression.execute(new_context, murano_class)
 
     def load(self, data):
         return self._object_store.load(data, None, self._root_context)
-
-    def load_shadow(self, data):
-        return self._shadow_object_store.load(data, None, self._root_context)

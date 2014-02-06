@@ -1,4 +1,5 @@
-import functools
+import inspect
+import helpers
 from murano_method import MuranoMethod
 from murano_object import MuranoObject
 from typespec import PropertySpec
@@ -23,6 +24,10 @@ class MuranoClass(object):
         else:
             self._parents = parents or [
                 class_loader.get_class('com.mirantis.murano.Object')]
+        self.object_class = type(
+            'mc' + helpers.generate_id(),
+            tuple([p.object_class for p in self._parents]) or (MuranoObject,),
+            {})
 
     @property
     def name(self):
@@ -31,6 +36,7 @@ class MuranoClass(object):
     @property
     def namespace_resolver(self):
         return self._namespace_resolver
+
 
     @property
     def parents(self):
@@ -87,11 +93,19 @@ class MuranoClass(object):
         return False
 
     def new(self, parent, object_store, context, parameters=None,
-            object_id=None, frozen=False, **kwargs):
-        obj = MuranoObject(self, parent, object_store, context,
-                           object_id=object_id, frozen=frozen, **kwargs)
+            object_id=None, **kwargs):
+
+        obj = self.object_class(self, parent, object_store, context,
+                                object_id=object_id, **kwargs)
         if parameters is not None:
+            argspec = inspect.getargspec(obj.initialize).args
+            if '_context' in argspec:
+                parameters['_context'] = context
+            if '_parent' in argspec:
+                parameters['_parent'] = parent
             obj.initialize(**parameters)
         return obj
 
+    def __str__(self):
+        return 'MuranoClass({0})'.format(self.name)
 

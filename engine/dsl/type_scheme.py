@@ -2,7 +2,7 @@ import types
 import sys
 import uuid
 import helpers
-from murano_object import MuranoObject
+import murano_object
 from yaql_expression import YaqlExpression
 from yaql.context import Context, EvalArg
 
@@ -45,7 +45,6 @@ class TypeScheme(object):
                 return None
             return True if value else False
 
-
         def _not_null(value):
             value = value()
             if value is None:
@@ -62,7 +61,7 @@ class TypeScheme(object):
             else:
                 raise TypeError(value)
 
-        @EvalArg('obj', arg_type=(MuranoObject, types.NoneType))
+        @EvalArg('obj', arg_type=(murano_object.MuranoObject, types.NoneType))
         def _owned(obj):
             if obj is None:
                 return None
@@ -71,7 +70,7 @@ class TypeScheme(object):
             else:
                 raise TypeError()
 
-        @EvalArg('obj', arg_type=MuranoObject)
+        @EvalArg('obj', arg_type=murano_object.MuranoObject)
         def _not_owned(obj):
             if obj is None:
                 return None
@@ -106,7 +105,7 @@ class TypeScheme(object):
                 raise TypeError()
             if value is None:
                 return None
-            if isinstance(value, MuranoObject):
+            if isinstance(value, murano_object.MuranoObject):
                 obj = value
             elif isinstance(value, types.DictionaryType):
                 obj = object_store.load(value, this, root_context,
@@ -126,7 +125,6 @@ class TypeScheme(object):
         def _validate(prefix, name):
             return namespace_resolver.resolve_name(
                 '%s:%s' % (prefix, name))
-
 
         context = Context(parent_context=root_context)
         context.register_function(_validate, '#validate')

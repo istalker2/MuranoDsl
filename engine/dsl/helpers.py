@@ -1,5 +1,6 @@
 import collections
 import inspect
+import uuid
 import deep
 import re
 import types
@@ -111,6 +112,10 @@ def merge_dicts(dict1, dict2, max_levels=0):
     return result
 
 
+def generate_id():
+    return uuid.uuid4().hex
+
+
 def parallel_select(collection, func):
     gp = GreenPool()
     return list(gp.imap(func, collection))
@@ -138,12 +143,16 @@ def get_environment(context):
 
 
 def get_object_store(context):
-    return context.get_data('$?objectStore+')
-
-
-def get_shadow_object_store(context):
-    return context.get_data('$?objectStore-')
+    return context.get_data('$?objectStore')
 
 
 def get_this(context):
     return context.get_data('$?this')
+
+
+def get_caller_context(context):
+    return context.get_data('$?callerContext')
+
+
+def get_attribute_store(context):
+    return context.get_data('$?attributeStore')

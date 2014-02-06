@@ -14,7 +14,7 @@ def _resolve(name, obj):
     def invoke(context, this, *args):
         try:
             executor = helpers.get_executor(context)
-            murano_class = context.get_data('$?type')
+            murano_class = helpers.get_type(context)
             return executor.invoke_method(name, this, context,
                                           murano_class, *args)
         except exceptions.NoMethodFound:

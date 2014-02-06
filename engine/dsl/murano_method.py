@@ -69,4 +69,6 @@ class MuranoMethod(object):
     def _prepare_body(self, body):
         return macros.MethodBlock(body)
 
+    def __repr__(self):
+        return 'MuranoMethod({0})'.format(self.name)
 

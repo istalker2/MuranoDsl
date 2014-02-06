@@ -2,6 +2,7 @@ import inspect
 import types
 import yaql
 import yaql.context
+import helpers
 import exceptions
 from namespace_resolver import NamespaceResolver
 from murano_class import MuranoClass, MuranoObject
@@ -68,7 +69,6 @@ class MuranoClassLoader(object):
             result[key] = value
         return result
 
-
     def import_class(self, cls, name=None):
         if not name:
             if inspect.isclass(cls):
@@ -77,25 +77,12 @@ class MuranoClassLoader(object):
                 name = cls.__class__._murano_class_name
 
         murano_class = self.get_class(name, create_missing=True)
-
         if inspect.isclass(cls):
             if issubclass(cls, MuranoObject):
-                def create_cls(parent, object_store, context, parameters,
-                               object_id=None, **kwargs):
-                    result = cls(murano_class, parent, object_store, context,
-                                 object_id=object_id, **kwargs)
-                    if parameters is not None:
-                        parameters = self._fix_parameters(parameters)
-                        argspec = inspect.getargspec(result.initialize).args
-                        if '_context' in argspec:
-                            parameters['_context'] = context
-                        if '_parent' in argspec:
-                            parameters['_parent'] = parent
-                        result.initialize(**parameters)
-                    return result
-                murano_class.new = create_cls
+                murano_class.object_class = cls
             else:
-                cls = cls()
+                murano_class.object_class = type(
+                    'mpc' + helpers.generate_id(), (cls, MuranoObject), {})
 
         for item in dir(cls):
             method = getattr(cls, item)

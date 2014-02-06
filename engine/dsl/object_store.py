@@ -1,13 +1,12 @@
+import inspect
 import helpers
-from murano_object import MuranoObject
 
 
 class ObjectStore(object):
-    def __init__(self, class_loader, parent_store=None, frozen=False):
+    def __init__(self, class_loader, parent_store=None):
         self._class_loader = class_loader
         self._parent_store = parent_store
         self._store = {}
-        self._frozen = frozen
 
     @property
     def class_loader(self):
@@ -36,15 +35,18 @@ class ObjectStore(object):
         if not class_obj:
             raise ValueError()
         obj = class_obj.new(parent, tmp_store, context=context,
-                            object_id=object_id, frozen=self._frozen,
-                            defaults=defaults)
+                            object_id=object_id, defaults=defaults)
         tmp_store._store[object_id] = obj
+        argspec = inspect.getargspec(obj.initialize).args
+        if '_context' in argspec:
+            value['_context'] = context
+        if '_parent' in argspec:
+            value['_parent'] = parent
         obj.initialize(**value)
 
-        if not self._frozen:
-            executor = helpers.get_executor(context)
-            methods = obj.type.find_method('initialize')
-            for cls, method in methods:
-                cls.invoke(method, executor, obj, {})
+        executor = helpers.get_executor(context)
+        methods = obj.type.find_method('initialize')
+        for cls, method in methods:
+            cls.invoke(method, executor, obj, {})
         self._store.update(tmp_store._store)
         return obj

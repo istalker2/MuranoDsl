@@ -5,10 +5,10 @@ import type_scheme
 import helpers
 from yaql.context import Context
 
+
 class MuranoObject(object):
     def __init__(self, murano_class, parent_obj, object_store, context,
-                 object_id=None, frozen=False, known_classes=None,
-                 defaults=None):
+                 object_id=None, known_classes=None, defaults=None):
         if known_classes is None:
             known_classes = {}
         self.__parent_obj = parent_obj
@@ -17,7 +17,6 @@ class MuranoObject(object):
         self.__properties = {}
         self.__object_store = object_store
         self.__parents = {}
-        self.__frozen = frozen
         self.__context = context
         self.__defaults = defaults or {}
         known_classes[murano_class.name] = self
@@ -28,31 +27,26 @@ class MuranoObject(object):
                     parent_class_name] = parent_class.new(
                         parent_obj, object_store, context, None,
                         object_id=self.__object_id,
-                        frozen=frozen, known_classes=known_classes,
+                        known_classes=known_classes,
                         defaults=defaults)
             else:
                 self.__parents[parent_class_name] = \
                     known_classes[parent_class_name]
 
     def initialize(self, **kwargs):
-        frozen = self.__frozen
-        self.__frozen = False
-        try:
-            used_names = set()
-            for i in xrange(2):
-                for property_name in self.__type.properties:
-                    spec = self.__type.get_property(property_name)
-                    if i == 0 and helpers.needs_evaluation(spec.default) \
-                            or i == 1 and property_name in used_names:
-                        continue
-                    used_names.add(property_name)
-                    property_value = kwargs.get(
-                        property_name, type_scheme.NoValue)
-                    self.set_property(property_name, property_value)
-            for parent in self.__parents.values():
-                parent.initialize(**kwargs)
-        finally:
-            self.__frozen = frozen
+        used_names = set()
+        for i in xrange(2):
+            for property_name in self.__type.properties:
+                spec = self.__type.get_property(property_name)
+                if i == 0 and helpers.needs_evaluation(spec.default) \
+                        or i == 1 and property_name in used_names:
+                    continue
+                used_names.add(property_name)
+                property_value = kwargs.get(
+                    property_name, type_scheme.NoValue)
+                self.set_property(property_name, property_value)
+        for parent in self.__parents.values():
+            parent.initialize(**kwargs)
 
     @property
     def object_id(self):
@@ -76,7 +70,7 @@ class MuranoObject(object):
             return self.__get_property(item, caller_class)
         except AttributeError as e:
             if not caller_class:
-                raise e
+                raise AttributeError(item)
             try:
                 obj = self.cast(caller_class)
                 return obj.__properties[item]
@@ -116,8 +110,6 @@ class MuranoObject(object):
                 raise AttributeError(key)
 
     def __set_property(self, key, value, caller_class=None):
-        if self.__frozen:
-            raise NotImplementedError()
         if key in self.__type.properties:
             spec = self.__type.get_property(key)
 

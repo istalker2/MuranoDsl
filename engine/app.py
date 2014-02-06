@@ -139,14 +139,6 @@ class EngineService(service.Service):
             }
         })
 
-        executor.load_shadow({
-            '?': {
-                'id': '123',
-                'type': 'com.mirantis.murano.examples.Test'
-            },
-            'p1': 99,
-            #'pt': '345'
-        })
 
         # objects = object_store.load({
         #     '123': {'?': {'type': 'com.mirantis.murano.examples.Test'}},
