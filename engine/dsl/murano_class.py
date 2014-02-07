@@ -1,3 +1,4 @@
+from collections import deque
 import inspect
 import helpers
 from murano_method import MuranoMethod
@@ -77,6 +78,16 @@ class MuranoClass(object):
         return list(set(reduce(
             lambda x, y: x + y,
             [p.find_method(name) for p in self._parents])))
+
+    def find_property(self, name):
+        types = deque([self])
+        while len(types) > 0:
+            mc = types.popleft()
+            if name in mc._properties:
+                return mc._properties[name]
+            types.extend(mc._parents)
+        return None
+
 
     def invoke(self, name, executor, this, parameters):
         args = executor.to_yaql_args(parameters)

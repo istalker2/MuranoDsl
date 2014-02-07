@@ -1,17 +1,17 @@
 import types
 import uuid
+import exceptions
 import yaml
 import type_scheme
 import helpers
 from yaql.context import Context
+import typespec
 
 
 class MuranoObject(object):
     def __init__(self, murano_class, parent_obj, object_store, context,
                  object_id=None, known_classes=None, defaults=None):
 
-        if murano_class.name.endswith('Test'):
-            print '--> Creating Test', object_id
         if known_classes is None:
             known_classes = {}
         self.__parent_obj = parent_obj
@@ -28,10 +28,10 @@ class MuranoObject(object):
             if not parent_class_name in known_classes:
                 known_classes[parent_class_name] = self.__parents[
                     parent_class_name] = parent_class.new(
-                        parent_obj, object_store, context, None,
-                        object_id=self.__object_id,
-                        known_classes=known_classes,
-                        defaults=defaults)
+                    parent_obj, object_store, context, None,
+                    object_id=self.__object_id,
+                    known_classes=known_classes,
+                    defaults=defaults)
             else:
                 self.__parents[parent_class_name] = \
                     known_classes[parent_class_name]
@@ -115,6 +115,10 @@ class MuranoObject(object):
     def __set_property(self, key, value, caller_class=None):
         if key in self.__type.properties:
             spec = self.__type.get_property(key)
+            if caller_class is not None and (
+                    spec.type not in typespec.PropertyTypes.Writable or
+                    not caller_class.is_compatible(self)):
+                raise exceptions.NoWriteAccess(key)
 
             default = self.__defaults.get(key, spec.default)
             child_context = Context(parent_context=self.__context)
@@ -145,12 +149,20 @@ class MuranoObject(object):
     def __repr__(self):
         return yaml.safe_dump(helpers.serialize(self))
 
-    def to_dictionary(self):
+    def to_dictionary(self, include_hidden=False):
         result = {}
         for parent in self.__parents.values():
-            result.update(parent.to_dictionary())
+            result.update(parent.to_dictionary(include_hidden))
         result.update({'?': {'type': self.type.name, 'id': self.object_id}})
-        result.update(self.__properties)
+        if include_hidden:
+            result.update(self.__properties)
+        else:
+            for property_name in self.type.properties:
+                if property_name in self.__properties:
+                    spec = self.type.get_property(property_name)
+                    if spec.type != typespec.PropertyTypes.Runtime:
+                        result[property_name] = \
+                            self.__properties[property_name]
         return result
 
     def __merge_default(self, src, defaults):

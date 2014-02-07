@@ -126,6 +126,10 @@ def to_python_codestyle(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
+def enum(**enums):
+    return type('Enum', (), enums)
+
+
 def get_executor(context):
     return context.get_data('$?executor')
 

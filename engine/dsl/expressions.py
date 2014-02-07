@@ -43,7 +43,7 @@ class Statement(DslExpression):
     def execute(self, context, murano_class):
         result = helpers.evaluate(self.expression, context)
         if self.destination:
-            self.destination.set(result, context, murano_class)
+            self.destination(result, context, murano_class)
 
         return result
 

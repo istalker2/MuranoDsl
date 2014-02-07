@@ -161,12 +161,13 @@ class EngineService(service.Service):
 
 
 #       print test_class.name
-        res = obj.type.invoke('deploy', executor, obj, {})
-        print "=", res
-
-        with open(filename, 'w') as file:
-            file.write(json.dumps(dsl.results_serializer.serialize(
-                obj, executor), indent=True))
+        try:
+            res = obj.type.invoke('deploy', executor, obj, {})
+            print "=", res
+        finally:
+            with open(filename, 'w') as file:
+                file.write(json.dumps(dsl.results_serializer.serialize(
+                    obj, executor), indent=True))
 
 
         exit()

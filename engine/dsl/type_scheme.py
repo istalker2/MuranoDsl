@@ -17,7 +17,8 @@ class TypeScheme(object):
     def __init__(self, spec):
         self._spec = spec
 
-    def prepare_context(self, root_context, this, object_store,
+    @staticmethod
+    def prepare_context(root_context, this, object_store,
                         namespace_resolver, default):
         def _int(value):
             value = value()
@@ -82,7 +83,8 @@ class TypeScheme(object):
             else:
                 raise TypeError()
 
-        @EvalArg('obj', arg_type=murano_object.MuranoObject)
+        @EvalArg('obj', arg_type=(murano_object.MuranoObject,
+                                  TypeScheme.ObjRef, types.NoneType))
         def _not_owned(obj):
             if isinstance(obj, TypeScheme.ObjRef):
                 return obj
@@ -216,7 +218,7 @@ class TypeScheme(object):
             result.append(self._map(item, spec_item, context))
         return result
 
-    def _map_scalar(self, data, spec, context):
+    def _map_scalar(self, data, spec):
         if data != spec:
             raise TypeError()
         else:
@@ -234,7 +236,7 @@ class TypeScheme(object):
         elif isinstance(spec, (types.IntType,
                                types.StringTypes,
                                types.NoneType)):
-            return self._map_scalar(data, spec, child_context)
+            return self._map_scalar(data, spec)
 
     def __call__(self, data, context, this, object_store,
                  namespace_resolver, default):

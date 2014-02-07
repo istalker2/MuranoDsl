@@ -9,8 +9,11 @@ class AttributeStore(object):
         if isinstance(value, MuranoObject):
             value = value.object_id
 
-        self._attributes[
-            (tagged_object.object_id, owner_type.name, name)] = value
+        key = (tagged_object.object_id, owner_type.name, name)
+        if value is None:
+            self._attributes.pop(key, None)
+        else:
+            self._attributes[key] = value
 
     def get(self, tagged_object, owner_type, name):
         return self._attributes.get(
@@ -26,4 +29,5 @@ class AttributeStore(object):
 
     def load(self, data):
         for item in data:
-            self._attributes[(item[0], item[1], item[2])] = item[3]
+            if item[3] is not None:
+                self._attributes[(item[0], item[1], item[2])] = item[3]

@@ -25,3 +25,9 @@ class AmbiguousMethodName(Exception):
     def __init__(self, name):
         super(AmbiguousMethodName, self).__init__(
             'Found more that one method %s' % name)
+
+
+class NoWriteAccess(Exception):
+    def __init__(self, name):
+        super(NoWriteAccess, self).__init__(
+            'Property %s is immutable to the caller' % name)
