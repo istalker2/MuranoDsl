@@ -98,11 +98,11 @@ class MuranoDslExecutor(object):
         this_id = this.object_id
 
         event, marker = self._locks.get((method_id, this_id), (None, None))
-        if True or event:
-            if True or marker == thread_marker:
+        if event:
+            if marker == thread_marker:
                 return self._invoke_method_implementation_gt(
                     body, this, params, murano_class, context)
-            #event.wait()
+            event.wait()
 
         event = Event()
         self._locks[(method_id, this_id)] = (event, thread_marker)
@@ -201,4 +201,8 @@ class MuranoDslExecutor(object):
         return expression.execute(new_context, murano_class)
 
     def load(self, data):
-        return self._object_store.load(data, None, self._root_context)
+        if not isinstance(data, types.DictionaryType):
+            raise TypeError()
+        self._attribute_store.load(data.get('Attributes') or [])
+        return self._object_store.load(data.get('Objects') or {},
+                                       None, self._root_context)

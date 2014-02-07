@@ -21,4 +21,8 @@ Workflow:
         - $.parentProperty = $t
 
 
+  xxx:
+    Body:
+      - $.setAttr(tag, value)
+#      - $.debugPrint('xx')
 

@@ -9,6 +9,9 @@ from yaql.context import Context
 class MuranoObject(object):
     def __init__(self, murano_class, parent_obj, object_store, context,
                  object_id=None, known_classes=None, defaults=None):
+
+        if murano_class.name.endswith('Test'):
+            print '--> Creating Test', object_id
         if known_classes is None:
             known_classes = {}
         self.__parent_obj = parent_obj

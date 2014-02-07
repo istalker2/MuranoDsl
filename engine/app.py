@@ -26,6 +26,7 @@ import config as cfg
 from dsl.executor import MuranoDslExecutor
 import class_loader
 import eventlet
+import dsl.results_serializer
 
 log = logging.getLogger(__name__)
 
@@ -104,40 +105,48 @@ class EngineService(service.Service):
         object_class.add_method('debugPrint', self.debug_print)
         object_class.add_method('debugPrint2', self.debug_print2)
 
-        obj = executor.load({
-            '?': {
-                'id': '123',
-                'type': 'com.mirantis.murano.examples.Test'
-            },
-            'p1': 88,
-            'pt': {
-                '?': {
-                    'type': 'com.mirantis.murano.examples.Test2',
-                    'id': '456'
-                },
-                'p': 777,
-                'pt2': {
-                    '?': {
-                        'type': 'com.mirantis.murano.examples.Test3',
-                        'id': 'xxx_test3'
-                    }
-                }
-            },
-            'ptx': {
-                '?': {
-                    'type': 'com.mirantis.murano.examples.Test2',
-                    'id': '4561'
-                },
-                'p': 7771,
-                'pt2': {
-                    '?': {
-                        'type': 'com.mirantis.murano.examples.Test3',
-                        'id': 'xxx_test31'
-                    },
-                    #'p3': 888
-                }
-            }
-        })
+        # obj = executor.load({
+        #     '?': {
+        #         'id': '123',
+        #         'type': 'com.mirantis.murano.examples.Test'
+        #     },
+        #     'p1': 88,
+        #     'pt': {
+        #         '?': {
+        #             'type': 'com.mirantis.murano.examples.Test2',
+        #             'id': '456'
+        #         },
+        #         'p': 777,
+        #         'pt2': {
+        #             '?': {
+        #                 'type': 'com.mirantis.murano.examples.Test3',
+        #                 'id': 'xxx_test3'
+        #             }
+        #         }
+        #     },
+        #     'ptx': {
+        #         '?': {
+        #             'type': 'com.mirantis.murano.examples.Test2',
+        #             'id': '4561'
+        #         },
+        #         'p': 7771,
+        #         'pt2': {
+        #             '?': {
+        #                 'type': 'com.mirantis.murano.examples.Test3',
+        #                 'id': 'xxx_test31'
+        #             },
+        #             #'p3': 888
+        #         }
+        #     }
+        # })
+
+
+        filename = './test.json'
+
+        with open(filename) as file:
+            data = file.read()
+
+        obj = executor.load(json.loads(data))
 
 
         # objects = object_store.load({
@@ -150,18 +159,16 @@ class EngineService(service.Service):
         # obj = executor.load(json.loads(data))
 
 
-        print obj
-        print '---------------------------------------------------------'
-        print
 
-
-
-#        print test_class.name
+#       print test_class.name
         res = obj.type.invoke('deploy', executor, obj, {})
         print "=", res
-        print
-        print '---------------------------------------------------------'
-        print obj
+
+        with open(filename, 'w') as file:
+            file.write(json.dumps(dsl.results_serializer.serialize(
+                obj, executor), indent=True))
+
+
         exit()
 
 

@@ -9,41 +9,37 @@ Inherits:
   - TestParent2
 
 Properties:
-  ptx:
-    Contract: $.class(Test2).owned()
-    Default:
-      pt2:
-        p3: $.someProperty
-
-  p1:
-    Contract: $.int()
-    Default: 99
-
-  someProperty:
-    Contract: $.int()
-    Default: 22
-
-  pt:
-    Contract: $.class(Test2).owned()
-  pt2:
-    Contract: $.class(Test2)
-
+  apps:
+    Contract:
+      - $.class(std:Object)
+  z:
+    Contract: $.int().notNull()
+    Default: 1
 
 Workflow:
   initialize:
     Body:
-#     - $this.super($.initialize())
-      - $.debugPrint('.ctor')
+     - $this.super($.initialize())
 
   deploy:
-#    Arguments:
-#        - t:
-#            Contract: $.int()
+    Arguments:
+        - t:
+            Contract: $.int()
+            Default: 2
 #        - z:
 #            Contract: $.int()
 #            Default: 33
     Body:
-      - Return: 2+2
+      - $.setAttr(xxx, 12)
+      - If: $t >= 0
+        Then:
+          - $.debugPrint(len(apps))
+          - $.debugPrint($t)
+          - $.debugPrint($.z)
+          - Return: $.apps.select($.deploy($t - 1))
+        Else:
+          Return: 777
+      #- Return: $.pt.p
 
   vpmethod:
     Body: $.debugPrint(child)

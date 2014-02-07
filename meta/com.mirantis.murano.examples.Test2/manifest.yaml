@@ -4,16 +4,25 @@ Namespaces:
 Name: Test2
 
 Properties:
-  p:
-    Contract: $.int()
-    Default: 11
-  pt2:
-    Contract: $.class(Test3)
+  backRef:
+    Contract: $.class(Test)
+  QQ:
+    Contract: {}
+
 
 Workflow:
-  method1:
-      Body:
-        - Return: $.p * 2
+  deploy:
+    Arguments:
+        - t:
+            Contract: $.int()
+            Default: 3
+    Body:
+      - If: $.backRef != null
+        Then:
+          - Return: $.backRef.z * 2
+        Else:
+          - Return: 1111111
 #        - debugPrint: 999999
 #        - debugPrint: $t
 #        - debugPrint: [$t, $.p2]
+

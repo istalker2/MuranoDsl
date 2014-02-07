@@ -10,6 +10,10 @@ NoValue = object()
 
 
 class TypeScheme(object):
+    class ObjRef(object):
+        def __init__(self, object_id):
+            self.object_id = object_id
+
     def __init__(self, spec):
         self._spec = spec
 
@@ -47,6 +51,10 @@ class TypeScheme(object):
 
         def _not_null(value):
             value = value()
+
+            if isinstance(value, TypeScheme.ObjRef):
+                return value
+
             if value is None:
                 raise TypeError()
             return value
@@ -56,13 +64,17 @@ class TypeScheme(object):
 
         def _check(value, predicate):
             value = value()
-            if predicate(value):
+            if isinstance(value, TypeScheme.ObjRef) or predicate(value):
                 return value
             else:
                 raise TypeError(value)
 
-        @EvalArg('obj', arg_type=(murano_object.MuranoObject, types.NoneType))
+        @EvalArg('obj', arg_type=(murano_object.MuranoObject,
+                                  TypeScheme.ObjRef, types.NoneType))
         def _owned(obj):
+            if isinstance(obj, TypeScheme.ObjRef):
+                return obj
+
             if obj is None:
                 return None
             elif obj.parent is this:
@@ -72,6 +84,9 @@ class TypeScheme(object):
 
         @EvalArg('obj', arg_type=murano_object.MuranoObject)
         def _not_owned(obj):
+            if isinstance(obj, TypeScheme.ObjRef):
+                return obj
+
             if obj is None:
                 return None
             elif obj.parent is this:
@@ -110,10 +125,13 @@ class TypeScheme(object):
             elif isinstance(value, types.DictionaryType):
                 obj = object_store.load(value, this, root_context,
                                         defaults=default)
-            elif isinstance(value, types.StringType):
+            elif isinstance(value, types.StringTypes):
                 obj = object_store.get(value)
                 if obj is None:
-                    raise TypeError('Object %s not found' % value)
+                    if not object_store.initializing:
+                        raise TypeError('Object %s not found' % value)
+                    else:
+                        return TypeScheme.ObjRef(value)
             else:
                 raise TypeError()
             if not murano_class.is_compatible(obj):
@@ -142,8 +160,12 @@ class TypeScheme(object):
 
 
     def _map_dict(self, data, spec, context):
+        if data is None or data is NoValue:
+            data = {}
         if not isinstance(data, types.DictionaryType):
             raise TypeError()
+        if not spec:
+            return data
         result = {}
         yaql_key = None
         for key, value in spec.iteritems():
@@ -167,7 +189,7 @@ class TypeScheme(object):
 
     def _map_list(self, data, spec, context):
         if not isinstance(data, types.ListType):
-            if data is None:
+            if data is None or data is NoValue:
                 data = []
             else:
                 data = [data]
@@ -217,7 +239,8 @@ class TypeScheme(object):
     def __call__(self, data, context, this, object_store,
                  namespace_resolver, default):
         context = self.prepare_context(
-            context, this, object_store, namespace_resolver, default)
+            context, this, object_store, namespace_resolver,
+            default)
         result = self._map(data, self._spec, context)
         if result is NoValue:
             raise TypeError('No type specified')
