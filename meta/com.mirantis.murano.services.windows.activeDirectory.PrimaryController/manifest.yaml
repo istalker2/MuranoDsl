@@ -6,7 +6,7 @@ Namespaces:
 
 Name: PrimaryController
 
-Inherits: Controller
+Extends: Controller
 
 Properties:
 

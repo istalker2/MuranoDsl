@@ -6,7 +6,7 @@ Namespaces:
 
 Name: ActiveDirectory
 
-Inherits: std:Application
+Extends: std:Application
 
 Properties:
   name:

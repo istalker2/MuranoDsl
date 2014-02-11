@@ -4,7 +4,7 @@ Namespaces:
     sys: com.mirantis.murano.system
 Name: Test
 
-Inherits:
+Extends:
   - TestParent
   - TestParent2
 
@@ -15,6 +15,13 @@ Properties:
   z:
     Contract: $.int().notNull()
     Default: 1
+  QWERTY:
+    Contract: [$.int()]
+    Type: InOut
+
+  QWERTY2:
+    Contract: {$.string(): $.int()}
+    Type: InOut
 
 Workflow:
   initialize:
@@ -30,12 +37,22 @@ Workflow:
 #            Contract: $.int()
 #            Default: 33
     Body:
-      - $.setAttr(xxx, 12)
-      - If: $t >= 0
+      - $.INVALID: 123
+      - $.SYSTEM: new(sys:AgentListener, name => xxx)
+
+
+      -
+        If: $.getAttr(xxx) = null
         Then:
-          - $.debugPrint(len(apps))
-          - $.debugPrint($t)
-          - $.debugPrint($.z)
+          - $.debugPrint('first time')
+          - $.setAttr(xxx, true)
+        Else:
+          - $.debugPrint('second time')
+          - $.setAttr(xxx, null)
+
+      -
+        If: $t >= 0
+        Then:
           - Return: $.apps.select($.deploy($t - 1))
         Else:
           Return: 777

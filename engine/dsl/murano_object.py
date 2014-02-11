@@ -116,8 +116,8 @@ class MuranoObject(object):
         if key in self.__type.properties:
             spec = self.__type.get_property(key)
             if caller_class is not None and (
-                    spec.type not in typespec.PropertyTypes.Writable or
-                    not caller_class.is_compatible(self)):
+                            spec.type not in typespec.PropertyTypes.Writable or
+                        not caller_class.is_compatible(self)):
                 raise exceptions.NoWriteAccess(key)
 
             default = self.__defaults.get(key, spec.default)

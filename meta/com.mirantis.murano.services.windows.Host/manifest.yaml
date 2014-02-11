@@ -6,7 +6,7 @@ Namespaces:
 
 Name: Host
 
-Inherits: srv:Instance
+Extends: srv:Instance
 
 Properties:
   adminAccountName:

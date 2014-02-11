@@ -27,7 +27,7 @@ class MuranoClassLoader(object):
 
         namespace_resolver = NamespaceResolver(data.get('Namespaces', {}))
 
-        class_parents = data.get('Inherits')
+        class_parents = data.get('Extends')
         if class_parents:
             if not isinstance(class_parents, types.ListType):
                 class_parents = [class_parents]

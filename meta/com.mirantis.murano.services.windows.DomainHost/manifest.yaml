@@ -7,7 +7,7 @@ Namespaces:
 
 Name: DomainHost
 
-Inherits: Host
+Extends: Host
 
 Properties:
   domain:
