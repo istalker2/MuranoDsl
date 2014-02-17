@@ -38,7 +38,7 @@ from engine.openstack.common import log as logging
 from engine.openstack.common import threadgroup
 
 
-rpc = importutils.try_import('conductor.openstack.common.rpc')
+rpc = importutils.try_import('engine.openstack.common.rpc')
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 

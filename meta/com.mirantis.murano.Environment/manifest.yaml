@@ -13,14 +13,15 @@ Properties:
 
   agentListener:
     Contract: $.class(sys:AgentListener)
+    Type: Runtime
 
   stack:
     Contract: $.class(sys:HeatStack)
+    Type: Runtime
 
 Workflow:
   initialize:
     Body:
-      - $.debugPrint('Env.ctor')
       - $this.agentListener: new(sys:AgentListener, name => $.name)
       - $this.stack: new(sys:HeatStack, name => $.name)
 

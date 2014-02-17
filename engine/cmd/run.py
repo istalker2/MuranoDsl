@@ -16,7 +16,7 @@
 import sys
 import os
 
-# If ../muranoconductor/__init__.py exists, add ../ to Python search path, so
+# If ../engine/__init__.py exists, add ../ to Python search path, so
 # it will override what happens to be installed in /usr/(local/)lib/python...
 
 possible_topdir = os.path.normpath(os.path.join(os.path.abspath(__file__),

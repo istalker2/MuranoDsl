@@ -33,8 +33,8 @@ import UserString
 
 import six
 
-_localedir = os.environ.get('conductor'.upper() + '_LOCALEDIR')
-_t = gettext.translation('conductor', localedir=_localedir, fallback=True)
+_localedir = os.environ.get('muranoengine'.upper() + '_LOCALEDIR')
+_t = gettext.translation('muranoengine', localedir=_localedir, fallback=True)
 
 
 def _(msg):

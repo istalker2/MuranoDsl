@@ -418,7 +418,7 @@ def _setup_logging_from_conf():
 
     if CONF.publish_errors:
         handler = importutils.import_object(
-            "conductor.openstack.common.log_handler.PublishErrorsHandler",
+            "muranoengine.openstack.common.log_handler.PublishErrorsHandler",
             logging.ERROR)
         log_root.addHandler(handler)
 

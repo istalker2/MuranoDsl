@@ -27,8 +27,8 @@ import tempfile
 from oslo.config import cfg
 from paste import deploy
 
-from muranoconductor import __version__ as version
-from muranoconductor.openstack.common import log
+from engine import __version__ as version
+from engine.openstack.common import log
 from ConfigParser import SafeConfigParser
 
 paste_deploy_opts = [
@@ -36,12 +36,6 @@ paste_deploy_opts = [
     cfg.StrOpt('config_file'),
 ]
 
-directories = [
-    cfg.StrOpt('data_dir', default=os.path.join(tempfile.gettempdir(),
-                                                'muranoconductor-cache')),
-    cfg.StrOpt('init_scripts_dir', default='etc/init-scripts'),
-    cfg.StrOpt('agent_config_dir', default='etc/agent-config'),
-]
 
 rabbit_opts = [
     cfg.StrOpt('host', default='localhost'),
@@ -81,7 +75,6 @@ CONF.register_opts(rabbit_opts, group='rabbitmq')
 CONF.register_opts(heat_opts, group='heat')
 CONF.register_opts(neutron_opts, group='neutron')
 CONF.register_opts(keystone_opts, group='keystone')
-CONF.register_opts(directories)
 CONF.register_opt(cfg.StrOpt('file_server'))
 CONF.register_cli_opt(cfg.StrOpt('murano_metadata_url'))
 
@@ -94,15 +87,15 @@ CONF.register_opt(cfg.StrOpt('network_topology',
                              default='routed'))
 
 
-CONF.import_opt('verbose', 'muranoconductor.openstack.common.log')
-CONF.import_opt('debug', 'muranoconductor.openstack.common.log')
-CONF.import_opt('log_dir', 'muranoconductor.openstack.common.log')
-CONF.import_opt('log_file', 'muranoconductor.openstack.common.log')
-CONF.import_opt('log_config', 'muranoconductor.openstack.common.log')
-CONF.import_opt('log_format', 'muranoconductor.openstack.common.log')
-CONF.import_opt('log_date_format', 'muranoconductor.openstack.common.log')
-CONF.import_opt('use_syslog', 'muranoconductor.openstack.common.log')
-CONF.import_opt('syslog_log_facility', 'muranoconductor.openstack.common.log')
+CONF.import_opt('verbose', 'engine.openstack.common.log')
+CONF.import_opt('debug', 'engine.openstack.common.log')
+CONF.import_opt('log_dir', 'engine.openstack.common.log')
+CONF.import_opt('log_file', 'engine.openstack.common.log')
+CONF.import_opt('log_config', 'engine.openstack.common.log')
+CONF.import_opt('log_format', 'engine.openstack.common.log')
+CONF.import_opt('log_date_format', 'engine.openstack.common.log')
+CONF.import_opt('use_syslog', 'engine.openstack.common.log')
+CONF.import_opt('syslog_log_facility', 'engine.openstack.common.log')
 
 
 cfg.set_defaults(log.log_opts, default_log_levels=[
@@ -113,7 +106,7 @@ cfg.set_defaults(log.log_opts, default_log_levels=[
 
 def parse_args(args=None, usage=None, default_config_files=None):
     CONF(args=args,
-         project='conductor',
+         project='engine',
          version=version,
          usage=usage,
          default_config_files=default_config_files)

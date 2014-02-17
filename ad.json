@@ -1,48 +1,50 @@
 {
-    "?": {
-        "id": "env1",
-        "type": "com.mirantis.murano.Environment"
-    },
-    "name": "MyEnvironment",
-    "applications": [{
+    "Objects": {
         "?": {
-            "id": "ad1",
-            "type": "com.mirantis.murano.services.windows.activeDirectory.ActiveDirectory"
+            "id": "env1",
+            "type": "com.mirantis.murano.Environment"
         },
-        "name": "myDomain",
-        "primaryController": {
+        "name": "MyEnvironment",
+        "applications": [{
             "?": {
-                "id": "controller1",
-                "type": "com.mirantis.murano.services.windows.activeDirectory.PrimaryController"
+                "id": "ad1",
+                "type": "com.mirantis.murano.services.windows.activeDirectory.ActiveDirectory"
             },
-            "host": {
+            "name": "myDomain",
+            "primaryController": {
                 "?": {
-                    "id": "host1",
-                    "type": "com.mirantis.murano.services.windows.Host"
-                },
-                "adminPassword": "AdminPassw0rd",
-                "name": "myHostName",
-                "flavor": "large",
-                "image": "winImage"
-            }
-        },
-        "secondaryControllers": [
-            {
-                "?": {
-                    "id": "controller2",
-                    "type": "com.mirantis.murano.services.windows.activeDirectory.SecondaryController"
+                    "id": "controller1",
+                    "type": "com.mirantis.murano.services.windows.activeDirectory.PrimaryController"
                 },
                 "host": {
                     "?": {
-                        "id": "host2",
+                        "id": "host1",
                         "type": "com.mirantis.murano.services.windows.Host"
                     },
                     "adminPassword": "AdminPassw0rd",
-                    "name": "myHostName2",
+                    "name": "myHostName",
                     "flavor": "large",
                     "image": "winImage"
                 }
-            }
-        ]
-    }]
+            },
+            "secondaryControllers": [
+                {
+                    "?": {
+                        "id": "controller2",
+                        "type": "com.mirantis.murano.services.windows.activeDirectory.SecondaryController"
+                    },
+                    "host": {
+                        "?": {
+                            "id": "host2",
+                            "type": "com.mirantis.murano.services.windows.Host"
+                        },
+                        "adminPassword": "AdminPassw0rd",
+                        "name": "myHostName2",
+                        "flavor": "large",
+                        "image": "winImage"
+                    }
+                }
+            ]
+        }]
+    }
 }

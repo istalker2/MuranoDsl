@@ -15,6 +15,7 @@ Properties:
 
   agent:
     Contract: $.class(sys:Agent)
+    Type: Runtime
 
 Workflow:
   initialize:
@@ -40,8 +41,13 @@ Workflow:
 
   prepareUserData:
     Body:
-      - $configFile: $.resources.string('Agent-v1.template')
-      - $initScript: $.resources.string('init.ps1')
+      - If: 'w' in toLower($.image)
+        Then:
+          - $configFile: $.resources.string('Agent-v1.template')
+          - $initScript: $.resources.string('windows-init.ps1')
+        Else:
+          - $configFile: $.resources.string('Agent-v2.template')
+          - $initScript: $.resources.string('linux-init.sh')
 
       - $configReplacements:
           "%RABBITMQ_HOST%": config(rabbitmq, host)
