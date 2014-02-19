@@ -14,7 +14,7 @@ class MuranoMethod(object):
         self._namespace_resolver = namespace_resolver
 
         if callable(payload):
-            self._body = payload or {}
+            self._body = payload
             self._arguments_scheme = self._generate_arguments_scheme(payload)
         else:
             payload = payload or {}
