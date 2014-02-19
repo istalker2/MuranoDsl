@@ -1,3 +1,6 @@
 Namespaces:
     =: com.mirantis.murano
 Name: Object
+
+Workflow:
+  initialize:

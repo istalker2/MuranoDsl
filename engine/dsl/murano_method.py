@@ -14,9 +14,10 @@ class MuranoMethod(object):
         self._namespace_resolver = namespace_resolver
 
         if callable(payload):
-            self._body = payload
+            self._body = payload or {}
             self._arguments_scheme = self._generate_arguments_scheme(payload)
         else:
+            payload = payload or {}
             self._body = self._prepare_body(payload.get('Body') or [])
             arguments_scheme = payload.get('Arguments') or []
             if isinstance(arguments_scheme, types.DictionaryType):

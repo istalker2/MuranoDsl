@@ -41,7 +41,7 @@ Workflow:
 
   prepareUserData:
     Body:
-      - If: 'w' in toLower($.image)
+      - If: !yaql "'w' in toLower($.image)"
         Then:
           - $configFile: $.resources.string('Agent-v1.template')
           - $initScript: $.resources.string('windows-init.ps1')

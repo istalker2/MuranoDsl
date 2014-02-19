@@ -124,16 +124,16 @@ log_opts = [
                default='%(asctime)s.%(msecs)03d %(process)d TRACE %(name)s '
                '%(instance)s',
                help='prefix each line of exception output with this format'),
-    # cfg.ListOpt('default_log_levels',
-    #             default=[
-    #                 'amqplib=WARN',
-    #                 'sqlalchemy=WARN',
-    #                 'boto=WARN',
-    #                 'suds=INFO',
-    #                 'keystone=INFO',
-    #                 'eventlet.wsgi.server=WARN'
-    #             ],
-    #             help='list of logger=LEVEL pairs'),
+    cfg.ListOpt('default_log_levels',
+                default=[
+                    'amqplib=WARN',
+                    'sqlalchemy=WARN',
+                    'boto=WARN',
+                    'suds=INFO',
+                    'keystone=INFO',
+                    'eventlet.wsgi.server=WARN'
+                ],
+                help='list of logger=LEVEL pairs'),
     cfg.BoolOpt('publish_errors',
                 default=False,
                 help='publish error events'),
@@ -418,7 +418,7 @@ def _setup_logging_from_conf():
 
     if CONF.publish_errors:
         handler = importutils.import_object(
-            "muranoengine.openstack.common.log_handler.PublishErrorsHandler",
+            "conductor.openstack.common.log_handler.PublishErrorsHandler",
             logging.ERROR)
         log_root.addHandler(handler)
 
