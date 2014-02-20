@@ -18,12 +18,21 @@ def serialize(root_object, executor):
     }
 
 
+def _cmp_objects(obj1, obj2):
+    if obj1 is None and obj2 is None:
+        return True
+    if obj1 is None or obj2 is None:
+        return False
+    return obj1.object_id == obj2.object_id
+
+
 def _pass1_serialize(value, parent, serialized_objects):
     if isinstance(value, (types.StringTypes, types.IntType, types.FloatType,
                           types.BooleanType, types.NoneType)):
         return value
     elif isinstance(value, MuranoObject):
-        if not value.parent is parent or value.object_id in serialized_objects:
+        if not _cmp_objects(value.parent, parent) \
+                or value.object_id in serialized_objects:
             return ObjRef(value)
         else:
             result = value.to_dictionary()

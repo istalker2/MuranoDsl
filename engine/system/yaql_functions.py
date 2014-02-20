@@ -47,23 +47,26 @@ def _convert_macro_parameter(macro, mappings):
         return mappings[macro]
 
 
-@EvalArg('format', str)
+@EvalArg('format', types.StringTypes)
 def _format(format, *args):
     return format.format(*[t() for t in args])
 
 
-@EvalArg('src', str)
-@EvalArg('substring', str)
-@EvalArg('value', str)
+@EvalArg('src', types.StringTypes)
+@EvalArg('substring', types.StringTypes)
+@EvalArg('value', types.StringTypes)
 def _replace_str(src, substring, value):
     return src.replace(substring, value)
 
 
-@EvalArg('src', str)
+@EvalArg('src', types.StringTypes)
 @EvalArg('replacements', dict)
 def _replace_dict(src, replacements):
     for key, value in replacements.iteritems():
-        src = src.replace(key, str(value))
+        if isinstance(src, str):
+            src = src.replace(key, str(value))
+        else:
+            src = src.replace(key, unicode(value))
     return src
 
 
@@ -79,71 +82,71 @@ def _coalesce(*args):
     return None
 
 
-@EvalArg('value', str)
+@EvalArg('value', types.StringTypes)
 def _base64encode(value):
     return base64.b64encode(value)
 
-@EvalArg('value', str)
+@EvalArg('value', types.StringTypes)
 def _base64decode(value):
     return base64.b64decode(value)
 
 
-@EvalArg('group', str)
-@EvalArg('setting', str)
+@EvalArg('group', types.StringTypes)
+@EvalArg('setting', types.StringTypes)
 def _config(group, setting):
     return cfg.CONF[group][setting]
 
 
-@EvalArg('setting', str)
+@EvalArg('setting', types.StringTypes)
 def _config_default(setting):
     return cfg.CONF[setting]
 
 
-@EvalArg('value', str)
+@EvalArg('value', types.StringTypes)
 def _upper(value):
     return value.upper()
 
 
-@EvalArg('value', str)
+@EvalArg('value', types.StringTypes)
 def _lower(value):
     return value.lower()
 
 
-@EvalArg('separator', str)
+@EvalArg('separator', types.StringTypes)
 def _join(separator, *args):
     return separator.join([t() for t in args])
 
 
-@EvalArg('value', str)
-@EvalArg('separator', str)
+@EvalArg('value', types.StringTypes)
+@EvalArg('separator', types.StringTypes)
 def _split(value, separator):
     return value.split(separator)
 
 
-@EvalArg('value', str)
-@EvalArg('prefix', str)
+@EvalArg('value', types.StringTypes)
+@EvalArg('prefix', types.StringTypes)
 def _startswith(value, prefix):
     return value.startswith(prefix)
 
 
-@EvalArg('value', str)
-@EvalArg('suffix', str)
+@EvalArg('value', types.StringTypes)
+@EvalArg('suffix', types.StringTypes)
 def _endswith(value, suffix):
     return value.endswith(suffix)
 
 
-@EvalArg('value', str)
+@EvalArg('value', types.StringTypes)
 def _trim(value):
     return value.strip()
 
 
-@EvalArg('value', str)
-@EvalArg('pattern', str)
+@EvalArg('value', types.StringTypes)
+@EvalArg('pattern', types.StringTypes)
 def _mathces(value, pattern):
     return re.match(pattern, value) is not None
 
 
-@EvalArg('value', str)
+@EvalArg('value', types.StringTypes)
 @EvalArg('index', int)
 @EvalArg('length', int)
 def _substr(value, index=0, length=-1):
@@ -152,11 +155,12 @@ def _substr(value, index=0, length=-1):
     else:
         return value[index:index+length]
 
+
 def _str(value):
     value = value()
     if value is None:
         return None
-    return str(value)
+    return unicode(value)
 
 
 def _int(value):
