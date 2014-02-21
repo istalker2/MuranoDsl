@@ -2,6 +2,7 @@ from muranocommon.messaging import Message
 from common import create_rmq_client
 from engine.dsl import classname, MuranoObject
 import eventlet.event
+import datetime
 import os
 import uuid
 import types
@@ -113,7 +114,7 @@ class Agent(MuranoObject):
             'message': self._get_array_item(data, 1),
             'command': self._get_array_item(data, 2),
             'details': self._get_array_item(data, 3),
-            'timestamp': self.datetime.datetime.now().isoformat()
+            'timestamp': datetime.datetime.now().isoformat()
         }
 
     def buildExecutionPlan(self, template, resources):

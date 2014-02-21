@@ -10,7 +10,7 @@
                 "id": "ad1",
                 "type": "com.mirantis.murano.services.windows.activeDirectory.ActiveDirectory"
             },
-            "name": "myDomain",
+            "name": "myDomain.loc",
             "primaryController": {
                 "?": {
                     "id": "controller1",
