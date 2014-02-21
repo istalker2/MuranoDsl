@@ -61,9 +61,10 @@ class HeatStack(engine.dsl.MuranoObject):
             self._applied = True
             return self._template.copy()
         except heatclient.exc.HTTPNotFound:
-            self._template = None
+            self._applied = True
+            self._template = {}
             self._parameters.clear()
-            return None
+            return {}
 
     def parameters(self):
         self.current()
