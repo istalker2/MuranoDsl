@@ -21,4 +21,4 @@ class ResourceManager(MuranoObject):
         return jsonlib.loads(self.string(name))
 
     def yaml(self, name):
-        return yamllib.load(self.string(name))
+        return yamllib.safe_load(self.string(name))
