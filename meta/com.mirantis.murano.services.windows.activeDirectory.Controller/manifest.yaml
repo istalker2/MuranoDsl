@@ -4,7 +4,9 @@ Namespaces:
     sys: com.mirantis.murano.system
     win: com.mirantis.murano.services.windows
 
+
 Name: Controller
+
 
 Properties:
   host:
@@ -14,6 +16,10 @@ Properties:
     Contract: $.string().notNull()
     Default: P@ssw0rd
 
+
 Workflow:
   deploy:
-    Body: $.host.deploy()
+    Body:
+      - $.debugPrint('Entering Controller[{0}].deploy()'.format($.host.name))
+      - $.host.deploy()
+      - $.debugPrint('Leaving Controller[{0}].deploy()'.format($.host.name))

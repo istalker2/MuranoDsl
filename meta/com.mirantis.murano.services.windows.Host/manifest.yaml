@@ -4,9 +4,12 @@ Namespaces:
     srv: com.mirantis.murano.services
     sys: com.mirantis.murano.system
 
+
 Name: Host
 
+
 Extends: srv:Instance
+
 
 Properties:
   adminAccountName:
@@ -21,32 +24,38 @@ Workflow:
   initialize:
     Body:
       - $.super($.initialize())
-      - $.resources: new(sys:Resources)
 
   deploy:
     Body:
+      - $.debugPrint('Entering Host[{0}].deploy()'.format($.name))
+
       - $.super($.deploy())
-      - $template: $.resources.json('SetPassword.template').bind(dict(
+
+      - $resources: new(sys:Resources)
+      - $template: $resources.json('SetPassword.template').bind(dict(
             adminPassword => $.adminPassword
           ))
-      - $.agent.send($template, $.resources)
+      - $.debugPrint('Calling agent with {0}'.format($template))
+      - $.agent.send($template, $resources)
+
+      - $.debugPrint('Leaving Host[{0}].deploy()'.format($.name))
 
   joinDomain:
     Arguments:
       - domain:
           Contract: $.class(ad:ActiveDirectory).notNull()
     Body:
-      - $template: $.resources.json('JoinDomain.template').bind(dict(
-            domain  => $domain.name,
+      - $.debugPrint('Entering Host[{0}].joinDomain()'.format($.name))
+
+      - $resources: new(sys:Resources)
+      - $template: $resources.json('JoinDomain.template').bind(dict(
+            domain         => $domain.name,
+            domainUser     => $domain.adminAccountName,
             domainPassword => $domain.adminPassword,
-            ouPath => '',
-            domainUser => $domain.adminAccountName,
-            dnsIp => $domain.primaryController.dnsIp
+            ouPath         => '',
+            dnsIp          => $domain.primaryController.dnsIp
           ))
-      - $.agent.call($template, $.resources)
+      - $.debugPrint('Calling agent with {0}'.format($template))
+      - $.agent.call($template, $resources)
 
-
-
-
-
-
+      - $.debugPrint('Leaving Host[{0}].joinDomain()'.format($.name))

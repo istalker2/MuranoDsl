@@ -4,14 +4,18 @@ Namespaces:
     sys: com.mirantis.murano.system
     win: com.mirantis.murano.services.windows
 
+
 Name: PrimaryController
+
 
 Extends: Controller
 
-Properties:
 
+Properties:
   dnsIp:
     Contract: $.string()
+    Type: Out
+
 
 Workflow:
   initialize:
@@ -22,15 +26,20 @@ Workflow:
   deploy:
     Arguments:
     Body:
-      - $.debugPrint('Deploying Primary Controller for domain {0}'.format($this.domain.name))
+      - $.debugPrint('Entering PrimaryController[{0}].deploy()'.format($.host.name))
+
       - $.super($.deploy())
+
       - $resources: new(sys:Resources)
       - $template: $resources.json('CreatePrimaryDC.template').bind(dict(
-            domain => $.domain.name,
+            domain           => $.domain.name,
             recoveryPassword => $.recoveryPassword
           ))
+      - $.debugPrint('Calling agent with {0}'.format($template))
       - $.host.agent.call($template, $resources)
 
       - $template: $resources.json('AskDnsIp.template')
+      - $.debugPrint('Calling agent with {0}'.format($template))
       - $.dnsIp: $.host.agent.call($template, $resources)[0]
 
+      - $.debugPrint('Leaving PrimaryController[{0}].deploy()'.format($.host.name))

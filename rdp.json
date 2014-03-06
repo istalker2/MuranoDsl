@@ -1,0 +1,55 @@
+{
+    "Objects": {
+        "?": {
+            "id": "fc-test",
+            "type": "com.mirantis.murano.Environment"
+        },
+        "name": "envRemoteDesktops",
+        "applications": [
+            {
+                "?": {
+                    "id": "appAD1",
+                    "type": "com.mirantis.murano.services.windows.activeDirectory.ActiveDirectory"
+                },
+                "name": "sk7.local",
+                "adminPassword": "NewP@ssw0rd",
+                "primaryController": {
+                    "?": {
+                        "id": "objController1",
+                        "type": "com.mirantis.murano.services.windows.activeDirectory.PrimaryController"
+                    },
+                    "host": {
+                        "?": {
+                            "id": "hostDC1",
+                            "type": "com.mirantis.murano.services.windows.Host"
+                        },
+                        "adminPassword": "P@ssw0rd",
+                        "name": "ad-primary",
+                        "flavor": "m1.medium",
+                        "image": "ws-2012-std"
+                    }
+                }
+            },
+            {
+                "?": {
+                    "id": "appRDP1",
+                    "type": "com.mirantis.murano.services.windows.RemoteDesktop"
+                },
+                "name": "rdp1",
+                "members": [
+                    {
+                        "?": {
+                            "id": "hostRDP1",
+                            "type": "com.mirantis.murano.services.windows.DomainHost"
+                        },
+                        "domain": "appAD1",
+                        "adminPassword": "P@ssw0rd",
+                        "name": "rdp-node1",
+                        "flavor": "m1.medium",
+                        "image": "ws-2012-std"
+                    }
+                ]
+            }
+        ]
+    }
+}

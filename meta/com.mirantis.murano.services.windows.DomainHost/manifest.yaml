@@ -3,27 +3,29 @@ Namespaces:
     srv: com.mirantis.murano.services
     std: com.mirantis.murano
     sys: com.mirantis.murano.system
-    ad: com.mirantis.murano.services.activeDirectory
+    ad: com.mirantis.murano.services.windows.activeDirectory
+
 
 Name: DomainHost
 
+
 Extends: Host
+
 
 Properties:
   domain:
     Contract: $.class(ad:ActiveDirectory).notNull()
 
+
 Workflow:
   deploy:
     Arguments:
     Body:
+      - $.debugPrint('Entering DomainHost[{0}].deploy()'.format($.name))
+
       - $.super($.deploy())
-      - $.joinDomain($.domain)
+      #- $.joinDomain($.domain)
+      # Workaround against broken ResourceManager:
+      - $.super($.joinDomain($this.domain))
 
-
-
-
-
-
-
-
+      - $.debugPrint('Leaving DomainHost[{0}].deploy()'.format($.name))

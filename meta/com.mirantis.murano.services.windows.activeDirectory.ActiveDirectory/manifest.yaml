@@ -4,9 +4,12 @@ Namespaces:
   sys: com.mirantis.murano.system
   win: com.mirantis.murano.services.windows
 
+
 Name: ActiveDirectory
 
+
 Extends: std:Application
+
 
 Properties:
   name:
@@ -26,8 +29,17 @@ Properties:
     Contract: $.string().notNull()
     Default: P@ssw0rd
 
+
 Workflow:
   deploy:
     Body:
-      -  $.primaryController.deploy()
-      -  $.secondaryControllers.pselect($.deploy())
+      - $.debugPrint('Entering ActiveDirectory[{0}].deploy()'.format($.name))
+
+      - $.primaryController.deploy()
+      - If: $.secondaryControllers.len() > 0
+        Then:
+          - $.secondaryControllers.pselect($.deploy())
+        Else:
+          - $.debugPrint('No secondary controllers provided.')
+
+      - $.debugPrint('Leaving ActiveDirectory[{0}].deploy()'.format($.name))

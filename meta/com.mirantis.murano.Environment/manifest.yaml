@@ -2,7 +2,9 @@ Namespaces:
     =: com.mirantis.murano
     sys: com.mirantis.murano.system
 
+
 Name: Environment
+
 
 Properties:
   name:
@@ -19,6 +21,7 @@ Properties:
     Contract: $.class(sys:HeatStack)
     Type: Runtime
 
+
 Workflow:
   initialize:
     Body:
@@ -27,12 +30,10 @@ Workflow:
 
   deploy:
     Body:
+      - $.debugPrint('Entering Environment[{0}].deploy()'.format($.name))
+
       - $.agentListener.start()
-      - $.applications.pselect($.deploy())
+      - $.applications.select($.deploy())
       - $.agentListener.stop()
 
-
-
-
-
-
+      - $.debugPrint('Leaving Environment[{0}].deploy()'.format($.name))
