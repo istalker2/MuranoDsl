@@ -1,0 +1,26 @@
+Namespaces:
+  =: com.mirantis.murano.services.windows
+  std: com.mirantis.murano
+  sys: com.mirantis.murano.system
+
+
+Name: RemoteDesktop
+
+
+Extends: std:Application
+
+
+Properties:
+  name:
+    Contract: $.string().notNull()
+
+  members:
+    Contract: [$.class(DomainHost).notNull()]
+
+
+Workflow:
+  deploy:
+    Body:
+      - $.debugPrint('Entering RemoteDesktop[{0}].deploy()'.format($.name))
+      - $.members.select($.deploy())
+      - $.debugPrint('Leaving RemoteDesktop[{0}].deploy()'.format($.name))
