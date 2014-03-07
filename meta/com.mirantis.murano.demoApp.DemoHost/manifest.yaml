@@ -1,0 +1,29 @@
+Namespaces:
+  =:    com.mirantis.murano.demoApp
+  sys:  com.mirantis.murano.system
+
+
+Name: DemoHost
+
+
+Extends: DemoInstance
+
+
+Workflow:
+  deploy:
+    Body:
+      # Although there is no property 'name' defined in this class,
+      #   a property with such name exists in parent class DemoInstance,
+      #   so we could use it here.
+      - $.debugPrint('Entering DemoHost[{0}].deploy()'.format($.name))
+
+      # Call 'deploy()' method if this class's parent.
+      - $.super($.deploy())
+
+      - $res: new(sys:Resources)
+      - $template: $res.json('demo-explan.json')
+
+      - $.debugPrint('Calling agent with {0}'.format($template))
+      - $.agent.call($template, $res)
+
+      - $.debugPrint('Leaving DemoHost[{0}].deploy()'.format($.name))

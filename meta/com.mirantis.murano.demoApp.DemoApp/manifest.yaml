@@ -1,0 +1,28 @@
+Namespaces:
+  =:    com.mirantis.murano.demoApp
+  sys:  com.mirantis.murano.system
+  std:  com.mirantis.murano
+
+
+Name: DemoApp
+
+
+Extends:  std:Application
+
+
+Properties:
+  name:
+    Contract: $.string().notNull()
+
+  members:
+    Contract: [$.class(DemoHost).notNull()]
+
+
+Workflow:
+  deploy:
+    Body:
+      - $.debugPrint('Entering DemoApp[{0}].deploy()'.format($.name))
+
+      - $.members.select($.deploy())
+
+      - $.debugPrint('Leaving DemoApp[{0}].deploy()'.format($.name))
