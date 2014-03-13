@@ -1,0 +1,66 @@
+{
+    "Objects": {
+        "?": {
+            "id": "fc-test",
+            "type": "com.mirantis.murano.Environment"
+        },
+        "name": "envFailoverCluster",
+        "applications": [
+            {
+                "?": {
+                    "id": "appAD1",
+                    "type": "com.mirantis.murano.services.windows.activeDirectory.ActiveDirectory"
+                },
+                "name": "acme.local",
+                "adminPassword": "P@ssw0rd",
+                "primaryController": {
+                    "?": {
+                        "id": "objController1",
+                        "type": "com.mirantis.murano.services.windows.activeDirectory.PrimaryController"
+                    },
+                    "host": {
+                        "?": {
+                            "id": "hostDC1",
+                            "type": "com.mirantis.murano.services.windows.Host"
+                        },
+                        "adminPassword": "P@ssw0rd",
+                        "name": "dc1",
+                        "flavor": "m1.medium",
+                        "image": "ws-2012-std"
+                    }
+                }
+            },
+            {
+                "?": {
+                    "id": "appFC1",
+                    "type": "com.mirantis.murano.services.windows.failoverCluster.FailoverCluster"
+                },
+                "name": "fc1",
+                "ip": "192.168.102.100",
+                "nodes": [
+                {
+                    "?": {
+                        "id": "hostFC1",
+                        "type": "com.mirantis.murano.services.windows.failoverCluster.ClusterNode"
+                    },
+                    "domain": "appAD1",
+                    "adminPassword": "P@ssw0rd",
+                    "name": "fc-node1",
+                    "flavor": "m1.medium",
+                    "image": "ws-2012-std"
+                },
+                {
+                    "?": {
+                        "id": "hostFC2",
+                        "type": "com.mirantis.murano.services.windows.failoverCluster.ClusterNode"
+                    },
+                    "domain": "appAD1",
+                    "adminPassword": "P@ssw0rd",
+                    "name": "fc-node2",
+                    "flavor": "m1.medium",
+                    "image": "ws-2012-std"
+                }]
+            }
+        ]
+    }
+}

@@ -1,0 +1,37 @@
+Namespaces:
+  =: com.mirantis.murano.services.windows.failoverCluster
+  std: com.mirantis.murano
+  sys: com.mirantis.murano.system
+  win: com.mirantis.murano.services.windows
+  ads: com.mirantis.murano.services.windows.activeDirectory
+
+
+Name: FailoverCluster
+
+
+Extends: std:Application
+
+
+Properties:
+  name:
+    Contract: $.string().notNull()
+
+  ip:
+    Contract: $.string().notNull()
+
+  nodes:
+    Contract: [$.class(ClusterNode).notNull(), 2]
+
+
+Workflow:
+  deploy:
+    Body:
+      - $.debugPrint('Entering FailoverCluster[{0}].deploy()'.format($.name))
+
+      # First, deploy nodes (via deploy() inheritance)
+      #  and install Failover Cluster components to them.
+      - $.nodes.select($.deploy())
+      # Create new Failover Cluster using any of the nodes.
+      - $.nodes[0].createFailoverCluster()
+
+      - $.debugPring('Leaving FailoverCluster[{0}].deploy()'.format($.name))
