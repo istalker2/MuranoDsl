@@ -1,0 +1,64 @@
+Namespaces:
+  =: com.mirantis.murano.services.windows.failoverCluster
+  std: com.mirantis.murano
+  sys: com.mirantis.murano.system
+  win: com.mirantis.murano.services.windows
+  ads: com.mirantis.murano.services.windows.activeDirectory
+
+
+Name: ClusterNode
+
+
+Extends: win:DomainHost
+
+
+Workflow:
+  initialize:
+    Body:
+      - $.super($.initialize())
+      - $.cluster: $.find(FailoverCluster).require()
+
+
+  deploy:
+    Body:
+      - $.debugPrint('Entering ClusterNode[{0}].deploy()'.format($.name))
+
+      - $.super($.deploy())
+      - $.installClusterPrereqs()
+
+      - $.debugPrint('Leaving ClusterNode[{0}].deploy()'.format($.name))
+
+
+  installClusterPrereqs:
+    Body:
+      - $.debugPrint('Entering ClusterNode[{0}].deployClusterPrereqs()'.format($.name))
+
+      - $res: new(sys:Resources)
+      - $plan: $res.json('FailoverClusterPrerequisites.json').bind(dict(
+            domainName                  => $.domain.name,
+            domainAdminAccountName      => $.domain.adminAccountName,
+            domainAdminAccountPassword  => $.domain.adminPassword
+          ))
+      - $.agent.call($plan, $res)
+
+      - $.debugPrint('Leaving ClusterNode[{0}].deployClusterPrereqs()'.format($.name))
+
+
+  createFailoverCluster:
+    Body:
+      - $.debugPrint('Entering ClusterNode[{0}].createFailoverCluster()'.format($.name))
+
+      - $clusterNodes: $.cluster.nodes.select($.name)
+
+      - $res: new(sys:Resources)
+      - $plan: $res.json('NewFailoverCluster.json').bind(dict(
+            domainName                  => $.domain.name,
+            domainAdminAccountName      => $.domain.adminAccountName,
+            domainAdminAccountPassword  => $.domain.adminPassword,
+            clusterName                 => $.cluster.name,
+            clusterIp                   => $.cluster.ip,
+            clusterNodes                => $clusterNodes
+          ))
+      - $.agent.call($plan, $res)
+
+      - $.debugPrint('Leaving ClusterNode[{0}].createFailoverCluster()'.format($.name))
