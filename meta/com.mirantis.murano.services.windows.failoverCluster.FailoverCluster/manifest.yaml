@@ -34,4 +34,4 @@ Workflow:
       # Create new Failover Cluster using any of the nodes.
       - $.nodes[0].createFailoverCluster()
 
-      - $.debugPring('Leaving FailoverCluster[{0}].deploy()'.format($.name))
+      - $.debugPrint('Leaving FailoverCluster[{0}].deploy()'.format($.name))
